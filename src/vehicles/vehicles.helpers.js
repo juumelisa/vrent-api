@@ -1,5 +1,4 @@
 const getVehicle = (vehicleList = []) => {
-  console.log(vehicleList)
   const result = []
   Object.values(vehicleList).forEach(vehicle => {
     const obj = {}

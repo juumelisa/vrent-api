@@ -140,7 +140,6 @@ exports.store = async (req, res) => {
   async function passes() {
     const t = await sequelize.transaction()
     try{
-      console.log(locationId)
       const id = uuid()
       const params = {
         id,
