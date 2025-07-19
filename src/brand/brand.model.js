@@ -7,33 +7,22 @@ const db = {}
 db.Sequelize = Sequelize
 db.sequelize = sequelize
 
-function vehicle() {
-  const Table = sequelize.define("vehicle", {
+function brand() {
+  const Table = sequelize.define("brand", {
     id: {
       type: Sequelize.BIGINT,
       primaryKey: true,
       unique: true,
       allowNull: false
     },
-    brandId: {
-      type: Sequelize.BIGINT,
-      allowNull: false
-    },
-    model: {
+    name: {
       type: Sequelize.STRING,
       allowNull: true
     },
-    type: {
-      type: Sequelize.TINYINT,
-      allowNull: false
-    },
-    seat: {
-      type: Sequelize.TINYINT,
-      allowNull: false
-    },
-    location: {
-      type: Sequelize.STRING,
-      allowNull: false
+    status: {
+      type: Sequelize.SMALLINT,
+      allowNull: false,
+      defaultValue: 1
     }
   },
   {
@@ -41,12 +30,12 @@ function vehicle() {
       createAt: true,
       charset: 'utf8mb4',
       collate: 'utf8mb4_general_ci',
-      tableName: 'vehicle'
+      tableName: 'brand'
   });
 
   return Table;
 }
 
-db.vehicle = vehicle()
+db.brand = brand()
 
 module.exports = db

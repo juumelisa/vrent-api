@@ -1,17 +1,23 @@
 const Validator = require("validatorjs");
-const { vehicle, sequelize } = require("../vehicles/vehicles.model");
-const { Op } = require("sequelize");
+const Db = require("./location.model");
 const { uuid } = require("../../helpers");
-const { brand: Brand } = require("../brand/brand.model");
+const { Op } = require("sequelize");
+const { getCity } = require("./location.helpers");
+const City = Db.city
+const Province = Db.province
 
-exports.list = (req, res) => {
+City.belongsTo(Province, {as: 'province', sourceKey: 'provinceId'})
+
+exports.list = async (req, res) => {
   const query = req.query
-  const { q, location, limit = 10, offset = 0 } = query
+  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc' } = query
 
   const rules = {
     q: 'string',
     limit: 'integer|min:1|max:100',
-    offset: 'integer|min:0'
+    offset: 'integer|min:0',
+    order: 'in:name,province,createdAt,updatedAt',
+    sort: 'in:asc,desc'
   }
 
   let error_msg = {
@@ -28,7 +34,7 @@ exports.list = (req, res) => {
       message.push(value[0]);
     }
     res.status(200).json({
-      code: 400,
+      code: 401,
       status: "error",
       message: message[0],
       offset: offset,
@@ -39,79 +45,78 @@ exports.list = (req, res) => {
   }
 
   async function passes() {
-    const where = {}
-    const andQuery = []
-    if (q) {
-      andQuery.push({
-        name: {
-          [Op.substring]: q
-        },
-        brand: {
+    try {
+      let orderDetail = [[order, sort]]
+      limit = parseInt(limit)
+      offset = parseInt(offset)
+      const where = {}
+      if (q) {
+        where.name = {
           [Op.substring]: q
         }
+      }
+      if (order === 'province') {
+        orderDetail = [['province', 'name', sort]]
+      }
+      const cityResult = await City.findAndCountAll({
+        attributes: ['id', 'name'],
+        where,
+        order: orderDetail,
+        limit,
+        offset,
+        include: [
+          {
+            model: Province,
+            as: 'province'
+          }
+        ]
+      })
+      const total = cityResult.count
+      const cities = cityResult.rows
+      const result = getCity(cities)
+      res.status(200).json({
+        status: "success",
+        code: 200,
+        limit,
+        offset,
+        message: "successfully fetch data",
+        total,
+        result
+      })
+    } catch (err) {
+      const message = err.sql ? 'query syntax error' : err.message
+      res.status(200).json({
+        status: "success",
+        code: 400,
+        limit,
+        offset,
+        message: message,
+        result: []
       })
     }
-    if (location) {
-      andQuery.push({
-        location: location
-      })
-    }
-    where[Op.and] = andQuery
-    const vehicles = await vehicle.findAll({
-      where,
-      limit,
-      offset
-    })
-    res.status(200).json({
-      status: "success",
-      code: 200,
-      message: "successfully fetch data",
-      result: vehicles
-    })
   }
 }
 
 exports.store = async (req, res) => {
   const body = req.body
-  const { brand, model, location, images } = body
-  let brandId, locationId
+  const { name } = body
 
   Validator.registerAsync("check_brand", async function (name, attribute, req, passes) {
-    const brandDetail = await Brand.findOne({
+    const brand = await Brand.findOne({
       where: {
         name,
         status: 1
       }
     })
     if(brand) {
-      brandId = brandDetail.id
-      passes ()
+      passes (false, 'brand already exist')
     } else {
-      passes (false, 'invalid brand')
-    }
-  })
-
-  Validator.registerAsync("check_location", async function (name, attribute, req, passes) {
-    const brandDetail = await Brand.findOne({
-      where: {
-        name,
-        status: 1
-      }
-    })
-    if(brand) {
-      brandId = brandDetail.id
       passes ()
-    } else {
-      passes (false, 'invalid brand')
     }
   })
 
   const rules = {
-    brand: 'required|string|check_brand',
-    model: 'required|min:1|max:255',
-    location: 'required',
-    images: 'required|array',
-    'images.*': 'required|url'
+    name: 'required|min:1|max:255|check_brand',
   }
 
   let error_msg = {
@@ -131,23 +136,21 @@ exports.store = async (req, res) => {
       code: 400,
       status: "error",
       message: message[0],
-      total: 0,
       result: []
     });
   }
 
   async function passes() {
+    const t = await Db.sequelize.transaction()
     try{
-      const t = await sequelize.transaction()
       const id = uuid()
       const params = {
         id,
-        brandId,
-        model,
-        location
+        name
       }
-      await vehicle.create(params, {transaction: t})
+      await Brand.create(params, {transaction: t})
       await t.commit()
+
       res.status(200).json({
         status: "success",
         code: 200,
