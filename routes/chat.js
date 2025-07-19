@@ -5,8 +5,10 @@ var router = express.Router();
 var upload = multer();
 
 const auth = require('../middleware/auth');
+const authUser = require('../middleware/authUser');
 const controller = require('../controller/chat');
 
-router.get('/', [auth, upload.none()], controller.info);
+router.get('/', [auth], controller.info);
+router.post('/store', [auth, authUser, upload.none()], controller.store);
 
 module.exports = router;

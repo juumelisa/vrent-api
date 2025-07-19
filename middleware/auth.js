@@ -1,6 +1,5 @@
 module.exports = (req, res, next) => {
   const { api_key } = req.headers
-  console.log(api_key)
   if (api_key && api_key === process.env.API_KEY) {
     next ()
   } else {
