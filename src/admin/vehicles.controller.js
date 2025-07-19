@@ -1,8 +1,9 @@
 const Validator = require("validatorjs");
-const { vehicle, sequelize } = require("../vehicles/vehicles.model");
+const { vehicle, vehicleImage: VehicleImage, sequelize, vehicleImage } = require("../vehicles/vehicles.model");
 const { Op } = require("sequelize");
 const { uuid } = require("../../helpers");
 const { brand: Brand } = require("../brand/brand.model");
+const { city: City } = require("../location/location.model");
 
 exports.list = (req, res) => {
   const query = req.query
@@ -73,45 +74,45 @@ exports.list = (req, res) => {
 
 exports.store = async (req, res) => {
   const body = req.body
-  const { brand, model, location, images } = body
-  let brandId, locationId
+  const { brandId, model, locationId, images, type, seat, rentPrice } = body
 
-  Validator.registerAsync("check_brand", async function (name, attribute, req, passes) {
+  Validator.registerAsync("check_brand", async function (id, attribute, req, passes) {
     const brandDetail = await Brand.findOne({
       where: {
-        name,
+        id,
         status: 1
       }
     })
-    if(brand) {
-      brandId = brandDetail.id
+    if(brandDetail) {
       passes ()
     } else {
       passes (false, 'invalid brand')
     }
   })
 
-  Validator.registerAsync("check_location", async function (name, attribute, req, passes) {
-    const brandDetail = await Brand.findOne({
+  Validator.registerAsync("check_location", async function (id, attribute, req, passes) {
+    const locationDetail = await City.findOne({
       where: {
-        name,
+        id,
         status: 1
       }
     })
-    if(brand) {
-      brandId = brandDetail.id
+    if(locationDetail) {
       passes ()
     } else {
-      passes (false, 'invalid brand')
+      passes (false, 'invalid location')
     }
   })
 
   const rules = {
-    brand: 'required|string|check_brand',
+    brandId: 'required|string|check_brand',
     model: 'required|min:1|max:255',
-    location: 'required',
+    locationId: 'required|check_location',
     images: 'required|array',
-    'images.*': 'required|url'
+    'images.*': 'required|url',
+    type: 'in:car,motorbike,minivan',
+    seat: 'required|integer|min:1|max:100',
+    rentPrice: 'required|integer'
   }
 
   let error_msg = {
@@ -137,22 +138,38 @@ exports.store = async (req, res) => {
   }
 
   async function passes() {
+    const t = await sequelize.transaction()
     try{
-      const t = await sequelize.transaction()
+      console.log(locationId)
       const id = uuid()
       const params = {
         id,
         brandId,
         model,
-        location
+        locationId,
+        type: 1,
+        seat,
+        rentPrice
       }
+      const paramsImage = []
+      Object.values(images).forEach((image, index) => {
+        const imageId = uuid(index)
+        const obj = {
+          id: imageId,
+          vehicleId: id,
+          url: image
+        }
+        paramsImage.push(obj)
+      })
       await vehicle.create(params, {transaction: t})
+      await vehicleImage.bulkCreate(paramsImage, {transaction: t})
+
       await t.commit()
       res.status(200).json({
         status: "success",
         code: 200,
         message: "successfully store data",
-        result: [params]
+        result: []
       })
     } catch (err) {
       await t.commit()

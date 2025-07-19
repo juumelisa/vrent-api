@@ -1,17 +1,23 @@
 const Validator = require("validatorjs");
-const { vehicle } = require("./vehicles.model");
+const { vehicle: Vehicle, vehicleImage: VehicleImage } = require("./vehicles.model");
+const { city: City, province: Province } = require("../location/location.model");
+const { brand: Brand } = require("../brand/brand.model");
+const { getVehicle } = require("./vehicles.helpers");
+
+Vehicle.hasMany(VehicleImage, {as: 'images', foreignKey: 'vehicleId'})
+Vehicle.belongsTo(City, {as: 'city', foreignKey: 'locationId'})
+Vehicle.belongsTo(Brand, {as: 'brand', foreignKey: 'brandId'})
 
 exports.list = async (req, res) => {
   const query = req.query
-  const { q, limit = 10, offset = 0 } = query
-
-  // Validator.registerAsync("check_role", async function (role, attribute, req, passes) {
-  // })
+  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc' } = query
 
   const rules = {
     q: 'string',
     limit: 'integer|min:1|max:100',
-    offset: 'integer|min:0'
+    offset: 'integer|min:0',
+    order: 'in:name,createdAt,updatedAt',
+    sort: 'in:asc,desc'
   }
 
   let error_msg = {
@@ -39,12 +45,64 @@ exports.list = async (req, res) => {
   }
 
   async function passes() {
-    const vehicles = await vehicle.findAll()
-    res.status(200).json({
-      status: "success",
-      code: 200,
-      message: "successfully fetch data",
-      result: vehicles
-    })
+    try {
+      limit = parseInt(limit)
+      offset = parseInt(offset)
+      const where = {}
+      if (q) {
+        where[Op.or] = {
+          model: q
+        }
+      }
+      let orderList = [[order, sort]]
+      if (order === 'name') {
+        orderList = [['brand', 'name', sort], ['model', sort]]
+      }
+      const vehicles = await Vehicle.findAndCountAll({
+        distinct: true,
+        limit,
+        offset,
+        order: orderList,
+        include: [
+          {
+            model: Brand,
+            as: 'brand'
+          },
+          {
+            model: City,
+            as: 'city',
+            include: [
+              {
+                model: Province,
+                as: 'province'
+              }
+            ]
+          },
+          {
+            model: VehicleImage,
+            as: 'images'
+          }
+        ]
+      })
+      const total = vehicles.count
+      const vehicleList = vehicles.rows
+      const result = getVehicle(vehicleList)
+      res.status(200).json({
+        status: "success",
+        code: 200,
+        limit,
+        offset,
+        message: "successfully fetch data",
+        total,
+        result
+      })
+    } catch (err) {
+      res.status(200).json({
+        status: "error",
+        code: 400,
+        message: err.message,
+        result: []
+      })
+    }
   }
 }

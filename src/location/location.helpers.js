@@ -1,6 +1,5 @@
 const getCity = (cities = []) => {
   const result = []
-  console.log(cities)
   Object.values(cities).forEach(city => {
     const obj = {
       id: city.id,
