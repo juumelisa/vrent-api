@@ -109,17 +109,9 @@ exports.list = async (req, res) => {
 }
 
 exports.info = async (req, res) => {
-  console.log(req)
   const { id } = req.params
-  // let { q, limit = 10, offset = 0, order = 'name', sort = 'asc' } = query
 
-  const rules = {
-    // q: 'string',
-    // limit: 'integer|min:1|max:100',
-    // offset: 'integer|min:0',
-    // order: 'in:name,createdAt,updatedAt',
-    // sort: 'in:asc,desc'
-  }
+  const rules = {}
 
   let error_msg = {
     in: "invalid :attribute"
