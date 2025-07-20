@@ -29,7 +29,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/brand', brandRouter);
 app.use('/vehicle', vehicleRouter);
-app.use('/chat', chatRouter);
+// app.use('/chat', chatRouter);
 app.use('/admin', adminRouter);
 app.use('/upload', uploadRouter);
 app.use('/location', locationRouter);

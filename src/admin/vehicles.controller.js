@@ -1,7 +1,7 @@
 const Validator = require("validatorjs");
 const { vehicle, vehicleImage: VehicleImage, sequelize, vehicleImage } = require("../vehicles/vehicles.model");
 const { Op } = require("sequelize");
-const { uuid } = require("../../helpers");
+const { uuid, getKeyByValue, vehicleType } = require("../../helpers");
 const { brand: Brand } = require("../brand/brand.model");
 const { city: City } = require("../location/location.model");
 
@@ -141,12 +141,13 @@ exports.store = async (req, res) => {
     const t = await sequelize.transaction()
     try{
       const id = uuid()
+      const keyType = getKeyByValue(vehicleType(), type)
       const params = {
         id,
         brandId,
         model,
         locationId,
-        type: 1,
+        type: keyType,
         seat,
         rentPrice
       }

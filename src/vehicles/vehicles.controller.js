@@ -4,6 +4,7 @@ const { city: City, province: Province } = require("../location/location.model")
 const { brand: Brand } = require("../brand/brand.model");
 const { getVehicle } = require("./vehicles.helpers");
 const { Op } = require("sequelize");
+const { getKeyByValue, vehicleType } = require("../../helpers");
 
 Vehicle.hasMany(VehicleImage, {as: 'images', foreignKey: 'vehicleId'})
 Vehicle.belongsTo(City, {as: 'city', foreignKey: 'locationId'})
@@ -11,14 +12,15 @@ Vehicle.belongsTo(Brand, {as: 'brand', foreignKey: 'brandId'})
 
 exports.list = async (req, res) => {
   const query = req.query
-  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc' } = query
+  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc', type } = query
 
   const rules = {
     q: 'string',
     limit: 'integer|min:1|max:100',
     offset: 'integer|min:0',
     order: 'in:name,createdAt,updatedAt',
-    sort: 'in:asc,desc'
+    sort: 'in:asc,desc',
+    type: 'in:car,motorbike,minivan'
   }
 
   let error_msg = {
@@ -59,7 +61,14 @@ exports.list = async (req, res) => {
       if (order === 'name') {
         orderList = [['brand', 'name', sort], ['model', sort]]
       }
+      if (type) {
+        const keyType = getKeyByValue(vehicleType(), type)
+        console.log(keyType)
+        where.type = keyType
+      }
+      console.log(order)
       const vehicles = await Vehicle.findAndCountAll({
+        where,
         distinct: true,
         limit,
         offset,

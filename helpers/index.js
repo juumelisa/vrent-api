@@ -1,6 +1,19 @@
 const crypto = require('crypto')
 const UUID = require("uuid-int");
 
+
+function getKeyByValue(object, value) {
+  return Object.keys(object).find(key => object[key] === value);
+}
+
+function getValueByKey(object, value) {
+  return Object.values(object).find(key => object[value] === key);
+}
+
+function vehicleType() {
+  return {'1':'car', '2':'motorbike', '3':'minivan'}
+}
+
 const generateToken = () => {
   return crypto.randomBytes(32).toString('hex'); // 64-char token
 }
@@ -20,5 +33,8 @@ const uuid = (index = 0) => {
 
 module.exports = {
   generateToken,
-  uuid
+  uuid,
+  vehicleType,
+  getKeyByValue,
+  getValueByKey
 }
