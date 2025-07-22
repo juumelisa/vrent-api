@@ -13,7 +13,7 @@ var logger = require('morgan');
 
 var userRouter = require('./src/user/user.route');
 // var uploadRouter = require('./src/upload/upload.route');
-// var adminRouter = require('./src/admin/admin.route');
+var adminRouter = require('./src/admin/admin.route');
 // var locationRouter = require('./src/location/location.route');
 
 var app = express();
@@ -31,7 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // app.use('/brand', brandRouter);
 // app.use('/vehicle', vehicleRouter);
 // app.use('/chat', chatRouter);
-// app.use('/admin', adminRouter);
+app.use('/admin', adminRouter);
 app.use('/user', userRouter);
 // app.use('/upload', uploadRouter);
 // app.use('/location', locationRouter);

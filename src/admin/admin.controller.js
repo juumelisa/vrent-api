@@ -1,5 +1,5 @@
 const Validator = require("validatorjs");
-const { user: User, token: Token, sequelize } = require("./user.model");
+const { admin: Admin, tokenAdmin: TokenAdmin, sequelize } = require("./admin.model");
 const { hashing, uuid, generateToken, comparePassword } = require("../../helpers");
 
 exports.store = async (req, res) => {
@@ -7,14 +7,14 @@ exports.store = async (req, res) => {
   const { name, email, password } = body
   
   Validator.registerAsync("check_email", async function (name, attribute, req, passes) {
-    const user = await User.findOne({
+    const admin = await Admin.findOne({
       where: {
         email,
         status: 1
       }
     })
-    if (user) {
-      passes (false, 'user exist')
+    if (admin) {
+      passes (false, 'admin exist')
     } else {
       passes ()
     }
@@ -60,7 +60,7 @@ exports.store = async (req, res) => {
         email: email,
         password: hashPassword
       }
-      await User.create(params, {transaction: t})
+      await Admin.create(params, {transaction: t})
 
       // should send email
       await t.commit ()
@@ -116,37 +116,37 @@ exports.login = async (req, res) => {
   async function passes() {
     const t = await sequelize.transaction()
     try {
-      const user = await User.findOne({
+      const admin = await Admin.findOne({
         where: {
           email,
           status: 1
         }
       })
-      if (user) {
-        const hashPassword = user.password
+      if (admin) {
+        const hashPassword = admin.password
         const isPasswordMatch = await comparePassword(password, hashPassword)
         if (isPasswordMatch) {
           const token = generateToken()
           const id = uuid()
-          const userId = user.id
+          const adminId = admin.id
 
           const currentDate = new Date ()
           const expiredDate = new Date (currentDate.getTime() + 30 * 24 * 60 * 60 * 1000)
           const params = {
             id,
-            userId,
+            adminId,
             token,
             expiredDate
           }
 
           const wheresDestroy = {
-            userId
+            adminId
           }
-          await Token.destroy({
+          await TokenAdmin.destroy({
             where: wheresDestroy,
             transaction: t
           })
-          await Token.create(params, {transaction: t})
+          await TokenAdmin.create(params, {transaction: t})
           await t.commit ()
           const result = [{
             token
@@ -180,7 +180,7 @@ exports.login = async (req, res) => {
       const message = err.sql ? "internal server error" : err.message
       res.status(200).json({
         status: "error",
-        code: 400,
+        code: 500,
         message: message,
         result: []
       })
