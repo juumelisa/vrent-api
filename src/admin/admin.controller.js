@@ -320,7 +320,7 @@ exports.info = async (req, res) => {
         where
       })
       if (admin) {
-        const result = getAdmin(admin)
+        const result = getAdmin([admin])
         res.status(200).json({
           status: "success",
           code: 200,
