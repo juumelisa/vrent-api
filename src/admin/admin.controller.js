@@ -197,6 +197,9 @@ exports.list = async (req, res) => {
   const query = req.query
   let { q, limit = 10, page = 1, order = "name", sort = "asc", role } = query
   
+  limit = parseInt(limit)
+  page = parseInt(page)
+  
   const rules = {
     order: "in:name,email,createdAt,updatedAt",
     sort: "in:asc,desc",
@@ -224,6 +227,7 @@ exports.list = async (req, res) => {
       message: message[0],
       page,
       limit,
+      total: 0,
       result: []
     });
   }
@@ -235,16 +239,15 @@ exports.list = async (req, res) => {
       }
       if (q) {
         where[Op.or] = {
-          name: q,
-          email: q
+          name: {[Op.substring]: q},
+          email: {[Op.substring]: q}
         }
       }
       if (role) {
         const keyRole = getKeyByValue(adminRole(), role)
         where.role = keyRole
       }
-      limit = parseInt(limit)
-      const offset = (parseInt(page) - 1) * limit
+      const offset = (page - 1) * limit
       const admin = await Admin.findAndCountAll({
         where,
         limit,
@@ -269,6 +272,9 @@ exports.list = async (req, res) => {
         status: "error",
         code: 500,
         message: message,
+        page,
+        limit,
+        total: 0,
         result: []
       })
     }

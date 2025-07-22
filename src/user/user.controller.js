@@ -1,6 +1,8 @@
 const Validator = require("validatorjs");
 const { user: User, token: Token, sequelize } = require("./user.model");
 const { hashing, uuid, generateToken, comparePassword } = require("../../helpers");
+const { getUser } = require("./user.helpers");
+const { Op } = require("sequelize");
 
 exports.store = async (req, res) => {
   const body = req.body
@@ -182,6 +184,89 @@ exports.login = async (req, res) => {
         status: "error",
         code: 400,
         message: message,
+        result: []
+      })
+    }
+  }
+}
+
+exports.list = async (req, res) => {
+  const query = req.query
+  let { q, limit = 10, page = 1, order = "name", sort = "asc" } = query
+  
+  limit = parseInt(limit)
+  page = parseInt(page)
+  
+  const rules = {
+    order: "in:name,email,createdAt,updatedAt",
+    sort: "in:asc,desc",
+    limit: "integer|min:1|max:100",
+    page: "integer|min:1"
+  }
+
+  let errorMessage = {
+    in: "invalid :attribute"
+  };
+
+  let validation = new Validator(query, rules, errorMessage);
+  validation.checkAsync(passes, fails);
+
+  function fails() {
+    let message = []
+    for (const key in validation.errors.all()) {
+      const value = validation.errors.all()[key];
+      message.push(value[0]);
+    }
+    res.status(200).json({
+      code: 400,
+      status: "error",
+      message: message[0],
+      page,
+      limit,
+      total: 0,
+      result: []
+    });
+  }
+
+  async function passes() {
+    try {
+      const where = {
+        status: 1
+      }
+      if (q) {
+        where[Op.or] = {
+          name: {[Op.substring]: q},
+          email: {[Op.substring]: q}
+        }
+      }
+      const offset = (page - 1) * limit
+      const user = await User.findAndCountAll({
+        where,
+        limit,
+        offset,
+        order: [[order, sort]]
+      })
+      
+      const total = user.count
+      const result = getUser(user.rows)
+      res.status(200).json({
+        status: "success",
+        code: 200,
+        message: "successfully fetch data",
+        page,
+        limit,
+        total,
+        result
+      })
+    } catch (err) {
+      const message = err.sql ? "internal server error" : err.message
+      res.status(200).json({
+        status: "error",
+        code: 500,
+        message: message,
+        page,
+        limit,
+        total: 0,
         result: []
       })
     }
