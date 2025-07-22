@@ -1,13 +1,13 @@
 const crypto = require('crypto')
-const UUID = require("uuid-int");
-
+const UUID = require("uuid-int")
+const bcrypt = require("bcrypt")
 
 function getKeyByValue(object, value) {
-  return Object.keys(object).find(key => object[key] === value);
+  return Object.keys(object).find(key => object[key] === value)
 }
 
 function getValueByKey(object, value) {
-  return Object.values(object).find(key => object[value] === key);
+  return Object.values(object).find(key => object[value] === key)
 }
 
 function vehicleType() {
@@ -15,20 +15,26 @@ function vehicleType() {
 }
 
 const generateToken = () => {
-  return crypto.randomBytes(32).toString('hex'); // 64-char token
+  return crypto.randomBytes(32).toString('hex') // 64-char token
 }
 
 const uuid = (index = 0) => {
-  let id = Math.floor(Math.random() * 510);
+  let id = Math.floor(Math.random() * 510)
 
   if (index) {
-    id = index;
+    id = index
   }
 
-  let generator = UUID(id);
-  let uuid = generator.uuid();
+  let generator = UUID(id)
+  let uuid = generator.uuid()
 
-  return uuid;
+  return uuid
+}
+
+const hashing = async(password) => {
+  const saltRounds = 10
+  const hashPassword = await bcrypt.hash(password, saltRounds)
+  return hashPassword
 }
 
 module.exports = {
@@ -36,5 +42,6 @@ module.exports = {
   uuid,
   vehicleType,
   getKeyByValue,
-  getValueByKey
+  getValueByKey,
+  hashing
 }
