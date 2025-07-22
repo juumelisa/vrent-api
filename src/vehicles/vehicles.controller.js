@@ -63,10 +63,8 @@ exports.list = async (req, res) => {
       }
       if (type) {
         const keyType = getKeyByValue(vehicleType(), type)
-        console.log(keyType)
         where.type = keyType
       }
-      console.log(order)
       const vehicles = await Vehicle.findAndCountAll({
         where,
         distinct: true,

@@ -274,3 +274,69 @@ exports.list = async (req, res) => {
     }
   }
 }
+
+exports.info = async (req, res) => {
+  const params = req.params
+  let { id } = params
+  
+  const rules = {
+    id: "required"
+  }
+
+  let errorMessage = {
+    in: "invalid :attribute"
+  };
+
+  let validation = new Validator(params, rules, errorMessage);
+  validation.checkAsync(passes, fails);
+
+  function fails() {
+    let message = []
+    for (const key in validation.errors.all()) {
+      const value = validation.errors.all()[key];
+      message.push(value[0]);
+    }
+    res.status(200).json({
+      code: 400,
+      status: "error",
+      message: message[0],
+      result: []
+    });
+  }
+
+  async function passes() {
+    try {
+      const where = {
+        id,
+        status: 1
+      }
+      const admin = await Admin.findOne({
+        where
+      })
+      if (admin) {
+        const result = getAdmin(admin)
+        res.status(200).json({
+          status: "success",
+          code: 200,
+          message: "successfully fetch data",
+          result
+        })
+      } else {
+        res.status(200).json({
+          status: "error",
+          code: 404,
+          message: "data not found",
+          result: []
+        })
+      }
+    } catch (err) {
+      const message = err.sql ? "internal server error" : err.message
+      res.status(200).json({
+        status: "error",
+        code: 500,
+        message: message,
+        result: []
+      })
+    }
+  }
+}

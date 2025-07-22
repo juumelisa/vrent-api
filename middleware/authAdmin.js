@@ -7,7 +7,6 @@ const { tokenAdmin: TokenAdmin, admin: Admin } = require("../src/admin/admin.mod
 const authAdmin = (roles = []) => {
   const auth = async (req, res, next) => {
     const { token: userToken } = req.headers
-    console.log(token)
     if (userToken) {
       const dataToken = await TokenAdmin.findOne({
         where: {
@@ -24,7 +23,6 @@ const authAdmin = (roles = []) => {
         if (roles && roles.length ) {
           const keys = []
           for (const role of roles) {
-            console.log(role)
             const key = getKeyByValue(adminRole(), role)
             if (key) {
               keys.push(key)
