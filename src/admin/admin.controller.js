@@ -1,10 +1,12 @@
 const Validator = require("validatorjs");
 const { admin: Admin, tokenAdmin: TokenAdmin, sequelize } = require("./admin.model");
-const { hashing, uuid, generateToken, comparePassword } = require("../../helpers");
+const { hashing, uuid, generateToken, comparePassword, getKeyByValue } = require("../../helpers");
+const { Op } = require("sequelize");
+const { adminRole, getAdmin } = require("./admin.helpers");
 
 exports.store = async (req, res) => {
   const body = req.body
-  const { name, email, password } = body
+  const { name, email, password, role } = body
   
   Validator.registerAsync("check_email", async function (name, attribute, req, passes) {
     const admin = await Admin.findOne({
@@ -23,7 +25,8 @@ exports.store = async (req, res) => {
   const rules = {
     name: "required|max:255",
     email: "required|email|max:255|check_email",
-    password: ["required", "regex:/^(?=.*[A-Z])(?=.*\\d).{8,}$/"]
+    password: ["required", "regex:/^(?=.*[A-Z])(?=.*\\d).{8,}$/"],
+    role: "required|in:admin,super admin"
   }
 
   let errorMessage = {
@@ -54,11 +57,13 @@ exports.store = async (req, res) => {
       const hashPassword = await hashing(password)
 
       const trimName = name.trim()
+      const roleKey = getKeyByValue(adminRole(), role)
       const params = {
         id: id,
         name: trimName,
         email: email,
-        password: hashPassword
+        password: hashPassword,
+        role: roleKey
       }
       await Admin.create(params, {transaction: t})
 
@@ -177,6 +182,88 @@ exports.login = async (req, res) => {
       }
     } catch (err) {
       await t.rollback ()
+      const message = err.sql ? "internal server error" : err.message
+      res.status(200).json({
+        status: "error",
+        code: 500,
+        message: message,
+        result: []
+      })
+    }
+  }
+}
+
+exports.list = async (req, res) => {
+  const query = req.query
+  let { q, limit = 10, page = 1, order = "name", sort = "asc", role } = query
+  
+  const rules = {
+    order: "in:name,email,createdAt,updatedAt",
+    sort: "in:asc,desc",
+    limit: "integer|min:1|max:100",
+    page: "integer|min:1",
+    role: "in:super admin,admin"
+  }
+
+  let errorMessage = {
+    in: "invalid :attribute"
+  };
+
+  let validation = new Validator(query, rules, errorMessage);
+  validation.checkAsync(passes, fails);
+
+  function fails() {
+    let message = []
+    for (const key in validation.errors.all()) {
+      const value = validation.errors.all()[key];
+      message.push(value[0]);
+    }
+    res.status(200).json({
+      code: 400,
+      status: "error",
+      message: message[0],
+      page,
+      limit,
+      result: []
+    });
+  }
+
+  async function passes() {
+    try {
+      const where = {
+        status: 1
+      }
+      if (q) {
+        where[Op.or] = {
+          name: q,
+          email: q
+        }
+      }
+      if (role) {
+        const keyRole = getKeyByValue(adminRole(), role)
+        where.role = keyRole
+      }
+      limit = parseInt(limit)
+      const offset = (parseInt(page) - 1) * limit
+      const admin = await Admin.findAndCountAll({
+        where,
+        limit,
+        offset,
+        order: [[order, sort]]
+      })
+      
+      const total = admin.count
+      const result = getAdmin(admin.rows)
+      res.status(200).json({
+        status: "success",
+        code: 200,
+        message: "successfully fetch data",
+        page,
+        limit,
+        total,
+        result
+      })
+    } catch (err) {
       const message = err.sql ? "internal server error" : err.message
       res.status(200).json({
         status: "error",

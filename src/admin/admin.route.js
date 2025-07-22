@@ -6,6 +6,7 @@ const controller = require("./admin.controller");
 const { upload } = require('../../middleware/upload');
 const authAdmin = require('../../middleware/authAdmin');
 
+router.get('/', [auth, authAdmin(['super admin'])], controller.list);
 router.post('/', [auth, authAdmin(['super admin']), upload.none()], controller.store);
 router.post('/login', [auth, upload.none()], controller.login);
 
