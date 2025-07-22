@@ -95,9 +95,22 @@ exports.store = async (req, res) => {
   const body = req.body
   const { name, email, password } = body
   
+  Validator.registerAsync("check_email", async function (name, attribute, req, passes) {
+    const user = await User.findOne({
+      where: {
+        email
+      }
+    })
+    if (user) {
+      passes (false, 'user exist')
+    } else {
+      passes ()
+    }
+  })
+
   const rules = {
     name: "required|max:255",
-    email: "required|email|max:255",
+    email: "required|email|max:255|check_email",
     password: ["required", "regex:/^(?=.*[A-Z])(?=.*\\d).{8,}$/"]
   }
 
@@ -128,7 +141,7 @@ exports.store = async (req, res) => {
     try {
       const id = uuid()
       const hashPassword = await hashing(password)
-      console.log(hashPassword)
+
       const trimName = name.trim()
       const params = {
         id: id,
@@ -158,3 +171,78 @@ exports.store = async (req, res) => {
     }
   }
 }
+
+// exports.login = async (req, res) => {
+//   const body = req.body
+//   const { email, password } = body
+  
+//   const rules = {
+//     email: "required|email",
+//     password: ["required"]
+//   }
+
+//   let errorMessage = {
+//     in: "invalid :attribute"
+//   };
+
+//   let validation = new Validator(body, rules, errorMessage);
+//   validation.checkAsync(passes, fails);
+
+//   function fails() {
+//     let message = []
+//     console.log(validation.errors.all())
+//     for (const key in validation.errors.all()) {
+//       const value = validation.errors.all()[key];
+//       message.push(value[0]);
+//     }
+//     res.status(200).json({
+//       code: 400,
+//       status: "error",
+//       message: message,
+//       result: []
+//     });
+//   }
+
+//   async function passes() {
+//     const t = await sequelize.transaction()
+//     try {
+//       const hashPassword = await hashing(password)
+
+//       const user = await User.findOne({
+//         where: {
+//           email,
+//           password: hashPassword
+//         }
+//       })
+//       // if (user) {
+//       //   const 
+//       // }
+//       const trimName = name.trim()
+//       const params = {
+//         id: id,
+//         name: trimName,
+//         email: email,
+//         password: hashPassword
+//       }
+//       await User.create(params, {transaction: t})
+
+//       // should send email
+//       await t.commit ()
+//       res.status(200).json({
+//         status: "success",
+//         code: 200,
+//         message: "register success",
+//         result: []
+//       })
+//     } catch (err) {
+//       await t.rollback ()
+//       const message = err.sql ? "internal server error" : err.message
+//       res.status(200).json({
+//         status: "error",
+//         code: 400,
+//         message: message,
+//         result: []
+//       })
+//     }
+//   }
+// }
