@@ -37,11 +37,17 @@ const hashing = async(password) => {
   return hashPassword
 }
 
+const comparePassword = async (password, hashPassword) => {
+  const isMatch = await bcrypt.compare(password, hashPassword)
+  return isMatch
+}
+
 module.exports = {
   generateToken,
   uuid,
   vehicleType,
   getKeyByValue,
   getValueByKey,
-  hashing
+  hashing,
+  comparePassword
 }
