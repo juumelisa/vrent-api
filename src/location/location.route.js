@@ -8,5 +8,6 @@ const authAdmin = require('../../middleware/authAdmin');
 
 router.post('/province', [auth, authAdmin(), upload.none()], controller.provinceStore);
 router.post('/city', [auth, authAdmin(), upload.none()], controller.cityStore);
+router.get('/city', [auth, authAdmin(), upload.none()], controller.cityList);
 
 module.exports = router;
