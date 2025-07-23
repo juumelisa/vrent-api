@@ -1,95 +1,82 @@
 const Validator = require("validatorjs");
-const Db = require("./location.model");
 const { uuid } = require("../../helpers");
 const { Op } = require("sequelize");
-const { getCity } = require("./location.helpers");
-const City = Db.city
-const Province = Db.province
+const { province: Province, sequelize, city: City } = require("./location.model");
 
-City.belongsTo(Province, {as: 'province', sourceKey: 'provinceId'})
-
-exports.list = async (req, res) => {
-  const query = req.query
-  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc' } = query
+exports.provinceStore = async (req, res) => {
+  const body = req.body
+  const { name } = body
+  
+  Validator.registerAsync("checkProvince", async function (name, attribute, req, passes) {
+    const province = await Province.findOne({
+      where: {
+        name,
+        status: 1
+      }
+    })
+    if (province) {
+      passes (false, "province exist")
+    } else {
+      passes ()
+    }
+  })
 
   const rules = {
-    q: 'string',
-    limit: 'integer|min:1|max:100',
-    offset: 'integer|min:0',
-    order: 'in:name,province,createdAt,updatedAt',
-    sort: 'in:asc,desc'
+    name: "required|checkProvince"
   }
 
-  let error_msg = {
+  let errorMessage = {
     in: "invalid :attribute"
   };
 
-  let validation = new Validator(query, rules, error_msg);
+  let validation = new Validator(body, rules, errorMessage);
   validation.checkAsync(passes, fails);
 
   function fails() {
     let message = []
-    for (var key in validation.errors.all()) {
-      var value = validation.errors.all()[key];
+    for (const key in validation.errors.all()) {
+      const value = validation.errors.all()[key];
       message.push(value[0]);
     }
     res.status(200).json({
-      code: 401,
+      code: 400,
       status: "error",
-      message: message[0],
-      offset: offset,
-      limit: limit,
-      total: 0,
+      message: message,
       result: []
     });
   }
 
   async function passes() {
+    const t = await sequelize.transaction()
     try {
-      let orderDetail = [[order, sort]]
-      limit = parseInt(limit)
-      offset = parseInt(offset)
-      const where = {}
-      if (q) {
-        where.name = {
-          [Op.substring]: q
+      const id = uuid()
+      const provinceName = name.trim()
+
+      const params = {
+        id: id,
+        name: provinceName,
+        status: 1
+      }
+      await Province.create(params, {transaction: t})
+
+      await t.commit ()
+      const result = await Province.findOne({
+        where: {
+          id
         }
-      }
-      if (order === 'province') {
-        orderDetail = [['province', 'name', sort]]
-      }
-      const cityResult = await City.findAndCountAll({
-        attributes: ['id', 'name'],
-        where,
-        order: orderDetail,
-        limit,
-        offset,
-        include: [
-          {
-            model: Province,
-            as: 'province'
-          }
-        ]
       })
-      const total = cityResult.count
-      const cities = cityResult.rows
-      const result = getCity(cities)
       res.status(200).json({
         status: "success",
         code: 200,
-        limit,
-        offset,
-        message: "successfully fetch data",
-        total,
-        result
+        message: "successfully store province",
+        result: [result]
       })
     } catch (err) {
-      const message = err.sql ? 'query syntax error' : err.message
+      await t.rollback ()
+      const message = err.sql ? "internal server error" : err.message
       res.status(200).json({
-        status: "success",
+        status: "error",
         code: 400,
-        limit,
-        offset,
         message: message,
         result: []
       })
@@ -97,71 +84,106 @@ exports.list = async (req, res) => {
   }
 }
 
-exports.store = async (req, res) => {
+exports.cityStore = async (req, res) => {
   const body = req.body
-  const { name } = body
-
-  Validator.registerAsync("check_brand", async function (name, attribute, req, passes) {
-    const brand = await Brand.findOne({
-      where: {
-        name,
-        status: 1
-      }
+  const { provinceId, name } = body
+  
+  Validator.registerAsync("checkCity", async function (name, attribute, req, passes) {
+    const where = {
+      name,
+      status: 1
+    }
+    if (provinceId) {
+      where.provinceId = provinceId
+    }
+    const city = await City.findOne({
+      where
     })
-    if(brand) {
-      passes (false, 'brand already exist')
+    if (city) {
+      passes (false, "city exist")
     } else {
       passes ()
     }
   })
 
+  Validator.registerAsync("checkProvince", async function (id, attribute, req, passes) {
+    const province = await Province.findOne({
+      where: {
+        id,
+        status: 1
+      }
+    })
+    if (province) {
+      passes ()
+    } else {
+      passes (false, "province not exist")
+    }
+  })
+
   const rules = {
-    name: 'required|min:1|max:255|check_brand',
+    provinceId: "required",
+    name: "required|checkCity"
   }
 
-  let error_msg = {
+  let errorMessage = {
     in: "invalid :attribute"
   };
 
-  let validation = new Validator(body, rules, error_msg);
+  let validation = new Validator(body, rules, errorMessage);
   validation.checkAsync(passes, fails);
 
   function fails() {
     let message = []
-    for (var key in validation.errors.all()) {
-      var value = validation.errors.all()[key];
+    for (const key in validation.errors.all()) {
+      const value = validation.errors.all()[key];
       message.push(value[0]);
     }
     res.status(200).json({
       code: 400,
       status: "error",
-      message: message[0],
+      message: message,
       result: []
     });
   }
 
   async function passes() {
-    const t = await Db.sequelize.transaction()
-    try{
+    const t = await sequelize.transaction()
+    try {
       const id = uuid()
-      const params = {
-        id,
-        name
-      }
-      await Brand.create(params, {transaction: t})
-      await t.commit()
+      const cityName = name.trim()
 
+      const params = {
+        id: id,
+        provinceId,
+        name: cityName,
+        status: 1
+      }
+      await City.create(params, {transaction: t})
+
+      await t.commit ()
+
+      const result = await City.findOne({
+        where: {
+          id
+        },
+        // include: [
+          // {
+          //   model: Province,
+
+          // }
+        // ]
+      })
       res.status(200).json({
         status: "success",
         code: 200,
-        message: "successfully store data",
-        result: [params]
+        message: "successfully store province",
+        result: [result]
       })
     } catch (err) {
-      await t.commit()
-      const message = err.sql ? "query syntax error" : err.message
+      await t.rollback ()
+      const message = err.sql ? "internal server error" : err.message
       res.status(200).json({
-        status: "success",
+        status: "error",
         code: 400,
         message: message,
         result: []

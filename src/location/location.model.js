@@ -30,11 +30,13 @@ function province() {
       createAt: true,
       charset: 'utf8mb4',
       collate: 'utf8mb4_general_ci',
-      tableName: 'province'
+      tableName: 'province',
+      underscored: false
   });
 
   return Table;
 }
+
 
 function city() {
   const Table = sequelize.define("city", {
@@ -63,7 +65,8 @@ function city() {
       createAt: true,
       charset: 'utf8mb4',
       collate: 'utf8mb4_general_ci',
-      tableName: 'city'
+      tableName: 'city',
+      underscored: false
   });
 
   return Table;
