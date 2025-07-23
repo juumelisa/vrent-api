@@ -4,7 +4,9 @@ const getCity = (cities = []) => {
     const obj = {
       id: city.id,
       name: city.name,
-      province: city.province ? city.province.name : ''
+      province: city.province ? city.province.name : "-",
+      createdAt: city.createdAt ? city.createdAt : null,
+      updatedAt: city.updatedAt ? city.updatedAt : null
     }
     result.push(obj)
   })

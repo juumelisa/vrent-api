@@ -1,13 +1,15 @@
-var express = require('express');
-var router = express.Router();
+var express = require('express')
+var router = express.Router()
 
-const { upload } = require('../../middleware/upload');
+const { upload } = require('../../middleware/upload')
 const auth = require("../../middleware/auth")
-const controller = require("./location.controller");
-const authAdmin = require('../../middleware/authAdmin');
+const { provinceList, provinceStore, cityStore, cityList } = require("./location.controller")
+const authAdmin = require('../../middleware/authAdmin')
 
-router.post('/province', [auth, authAdmin(), upload.none()], controller.provinceStore);
-router.post('/city', [auth, authAdmin(), upload.none()], controller.cityStore);
-router.get('/city', [auth, authAdmin(), upload.none()], controller.cityList);
+router.get('/province', auth, provinceList)
+router.post('/province', [auth, authAdmin(), upload.none()], provinceStore)
 
-module.exports = router;
+router.get('/city', auth, cityList)
+router.post('/city', [auth, authAdmin(), upload.none()], cityStore)
+
+module.exports = router
