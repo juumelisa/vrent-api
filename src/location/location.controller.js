@@ -372,7 +372,8 @@ exports.cityStore = async (req, res) => {
   })
 
   Validator.registerAsync("checkImage", async function (image, attribute, req, passes) {
-    if (image.startsWith("https://res.cloudinary.com/dme13qwgd/image/")) {
+    const cloudUrl = process.env.IMAGE_URL
+    if (image.startsWith(cloudUrl)) {
       passes ()
     } else {
       passes (false, "invalid url")
