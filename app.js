@@ -38,7 +38,12 @@ app.use('/location', locationRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  next(createError(404));
+  return res.status(200).json({
+    code: 404,
+    status: 'error',
+    message: 'not found',
+    result: []
+  });
 });
 
 // error handler
