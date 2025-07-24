@@ -169,6 +169,82 @@ exports.provinceStore = async (req, res) => {
   }
 }
 
+exports.provinceDelete = async (req, res) => {
+  const body = req.body
+  const { id } = body
+  
+  Validator.registerAsync("checkProvince", async function (id, attribute, req, passes) {
+    const province = await Province.findOne({
+      where: {
+        id,
+        status: 1
+      }
+    })
+    if (province) {
+      passes ()
+    } else {
+      passes (false, "province not exist")
+    }
+  })
+
+  const rules = {
+    id: "required|checkProvince"
+  }
+
+  let errorMessage = {
+    in: "invalid :attribute"
+  };
+
+  let validation = new Validator(body, rules, errorMessage);
+  validation.checkAsync(passes, fails);
+
+  function fails() {
+    let message = []
+    for (const key in validation.errors.all()) {
+      const value = validation.errors.all()[key];
+      message.push(value[0]);
+    }
+    res.status(200).json({
+      code: 400,
+      status: "error",
+      message: message,
+      result: []
+    });
+  }
+
+  async function passes() {
+    const t = await sequelize.transaction()
+    try {
+      const params = {
+        status: 0
+      }
+      await Province.update(params, {
+        where: {
+          id
+        },
+        transaction: t
+      })
+
+      await t.commit ()
+      res.status(200).json({
+        status: "success",
+        code: 200,
+        message: "successfully delete province",
+        result: [result]
+      })
+    } catch (err) {
+      await t.rollback ()
+      const message = err.sql ? "internal server error" : err.message
+      res.status(200).json({
+        status: "error",
+        code: 400,
+        message: message,
+        result: []
+      })
+    }
+  }
+}
+
 exports.cityList = async (req, res) => {
   const query = req.query
   let { q, limit = 10, page = 1, order = "name", sort = "asc" } = query
@@ -296,7 +372,7 @@ exports.cityStore = async (req, res) => {
   })
 
   const rules = {
-    provinceId: "required",
+    provinceId: "required|checkProvince",
     name: "required|checkCity"
   }
 
@@ -354,6 +430,82 @@ exports.cityStore = async (req, res) => {
         code: 200,
         message: "successfully store province",
         result
+      })
+    } catch (err) {
+      await t.rollback ()
+      const message = err.sql ? "internal server error" : err.message
+      res.status(200).json({
+        status: "error",
+        code: 400,
+        message: message,
+        result: []
+      })
+    }
+  }
+}
+
+exports.cityDelete = async (req, res) => {
+  const body = req.body
+  const { id } = body
+  
+  Validator.registerAsync("checkCity", async function (id, attribute, req, passes) {
+    const city = await City.findOne({
+      where: {
+        id,
+        status: 1
+      }
+    })
+    if (city) {
+      passes ()
+    } else {
+      passes (false, "city not exist")
+    }
+  })
+
+  const rules = {
+    id: "required|checkCity"
+  }
+
+  let errorMessage = {
+    in: "invalid :attribute"
+  };
+
+  let validation = new Validator(body, rules, errorMessage);
+  validation.checkAsync(passes, fails);
+
+  function fails() {
+    let message = []
+    for (const key in validation.errors.all()) {
+      const value = validation.errors.all()[key];
+      message.push(value[0]);
+    }
+    res.status(200).json({
+      code: 400,
+      status: "error",
+      message: message,
+      result: []
+    });
+  }
+
+  async function passes() {
+    const t = await sequelize.transaction()
+    try {
+      const params = {
+        status: 0
+      }
+      await City.update(params, {
+        where: {
+          id
+        },
+        transaction: t
+      })
+
+      await t.commit ()
+      res.status(200).json({
+        status: "success",
+        code: 200,
+        message: "successfully delete city",
+        result: []
       })
     } catch (err) {
       await t.rollback ()
