@@ -179,7 +179,7 @@ exports.cityList = async (req, res) => {
   const rules = {
     limit: "integer|min:1|max:100",
     page: "integer|min:1",
-    order: "in:name,province",
+    order: "in:name,province,searchCount",
     sort: "in:asc,desc"
   }
 

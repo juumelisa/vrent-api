@@ -37,7 +37,6 @@ function province() {
   return Table;
 }
 
-
 function city() {
   const Table = sequelize.define("city", {
     id: {
@@ -53,6 +52,11 @@ function city() {
     provinceId: {
       type: Sequelize.BIGINT,
       allowNull: false
+    },
+    searchCount: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      defaultValue: 0
     },
     status: {
       type: Sequelize.SMALLINT,
