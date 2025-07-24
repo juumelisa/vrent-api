@@ -69,7 +69,7 @@ exports.provinceList = async (req, res) => {
       res.status(200).json({
         status: "success",
         code: 200,
-        message: "successfully store province",
+        message: "successfully fetch province",
         total,
         limit,
         page,
@@ -316,7 +316,7 @@ exports.cityList = async (req, res) => {
       res.status(200).json({
         status: "success",
         code: 200,
-        message: "successfully store province",
+        message: "successfully fetch list",
         total,
         limit,
         page,
