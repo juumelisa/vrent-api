@@ -337,7 +337,7 @@ exports.cityList = async (req, res) => {
 
 exports.cityStore = async (req, res) => {
   const body = req.body
-  const { provinceId, name } = body
+  const { provinceId, name, image } = body
   
   Validator.registerAsync("checkCity", async function (name, attribute, req, passes) {
     const where = {
@@ -371,9 +371,18 @@ exports.cityStore = async (req, res) => {
     }
   })
 
+  Validator.registerAsync("checkImage", async function (image, attribute, req, passes) {
+    if (image.startsWith("https://res.cloudinary.com/dme13qwgd/image/")) {
+      passes ()
+    } else {
+      passes (false, "invalid url")
+    }
+  })
+
   const rules = {
     provinceId: "required|checkProvince",
-    name: "required|checkCity"
+    name: "required|checkCity",
+    image: "url|checkImage"
   }
 
   let errorMessage = {
@@ -407,6 +416,7 @@ exports.cityStore = async (req, res) => {
         id: id,
         provinceId,
         name: cityName,
+        image,
         status: 1
       }
       await City.create(params, {transaction: t})
