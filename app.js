@@ -60,9 +60,14 @@ app.use(function(err, req, res, next) {
       message: 'File too large. Max size is 2MB.',
       result: []
     });
+  } else {
+    return res.status(200).json({
+      code: 500,
+      status: 'error',
+      message: err.message,
+      result: []
+    });
   }
-  res.status(err.status || 500);
-  res.render('error');
 });
 
 module.exports = app;
