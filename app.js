@@ -12,7 +12,7 @@ var logger = require('morgan');
 // var chatRouter = require('./routes/chat');
 
 var userRouter = require('./src/user/user.route');
-// var uploadRouter = require('./src/upload/upload.route');
+var uploadRouter = require('./src/upload/upload.route');
 var adminRouter = require('./src/admin/admin.route');
 var locationRouter = require('./src/location/location.route');
 
@@ -33,7 +33,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // app.use('/chat', chatRouter);
 app.use('/admin', adminRouter);
 app.use('/user', userRouter);
-// app.use('/upload', uploadRouter);
+app.use('/upload', uploadRouter);
 app.use('/location', locationRouter);
 
 // catch 404 and forward to error handler

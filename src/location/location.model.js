@@ -58,6 +58,10 @@ function city() {
       allowNull: false,
       defaultValue: 0
     },
+    image: {
+      type: Sequelize.TEXT,
+      allowNull: true
+    },
     status: {
       type: Sequelize.SMALLINT,
       allowNull: false,
