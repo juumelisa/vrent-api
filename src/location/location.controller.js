@@ -4,7 +4,7 @@ const { Op } = require("sequelize");
 const { state: State, sequelize, city: City } = require("./location.model");
 const { getCity } = require("./location.helpers");
 
-// City.belongsTo(State, {as: "state", foreignKey: "stateId"})
+City.belongsTo(State, {as: "state", foreignKey: "stateId"})
 
 exports.stateList = async (req, res) => {
   const query = req.query
