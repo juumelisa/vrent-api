@@ -78,7 +78,7 @@ exports.list = async (req, res) => {
   }
 }
 
-exports.store = async (req, res) => {
+exports.store = (req, res) => {
   const body = req.body
   const { name } = body
 

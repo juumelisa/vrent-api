@@ -7,7 +7,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-// var brandRouter = require('./src/brand/brand.route');
+var brandRouter = require('./src/brand/brand.route');
 // var vehicleRouter = require('./src/vehicles/vehicles.route');
 // var chatRouter = require('./routes/chat');
 
@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// app.use('/brand', brandRouter);
+app.use('/brand', brandRouter);
 // app.use('/vehicle', vehicleRouter);
 // app.use('/chat', chatRouter);
 app.use('/admin', adminRouter);

@@ -4,7 +4,7 @@ const { hashing, uuid, generateToken, comparePassword } = require("../../helpers
 const { getUser } = require("./user.helpers");
 const { Op } = require("sequelize");
 
-exports.store = async (req, res) => {
+exports.store = (req, res) => {
   const body = req.body
   const { name, email, password } = body
   
@@ -85,7 +85,7 @@ exports.store = async (req, res) => {
   }
 }
 
-exports.login = async (req, res) => {
+exports.login = (req, res) => {
   const body = req.body
   const { email, password } = body
   
@@ -190,7 +190,7 @@ exports.login = async (req, res) => {
   }
 }
 
-exports.list = async (req, res) => {
+exports.list = (req, res) => {
   const query = req.query
   let { q, limit = 10, page = 1, order = "name", sort = "asc" } = query
   
@@ -273,7 +273,7 @@ exports.list = async (req, res) => {
   }
 }
 
-exports.info = async (req, res) => {
+exports.info = (req, res) => {
   const params = req.params
   let { id } = params
   

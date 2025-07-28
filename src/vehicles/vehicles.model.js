@@ -19,7 +19,7 @@ function vehicle() {
       type: Sequelize.BIGINT,
       allowNull: false
     },
-    model: {
+    name: {
       type: Sequelize.STRING,
       allowNull: true
     },
@@ -35,7 +35,7 @@ function vehicle() {
       type: Sequelize.STRING,
       allowNull: false
     },
-    rentPrice: {
+    price: {
       type: Sequelize.INTEGER,
       allowNull: false
     },
@@ -56,7 +56,6 @@ function vehicle() {
   return Table;
 }
 
-
 function vehicleImage() {
   const Table = sequelize.define("vehicleImage", {
     id: {
@@ -72,6 +71,11 @@ function vehicleImage() {
     url: {
       type: Sequelize.STRING,
       allowNull: true
+    },
+    index: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      defaultValue: 1
     },
     status: {
       type: Sequelize.SMALLINT,
