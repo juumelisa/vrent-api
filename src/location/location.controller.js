@@ -1,12 +1,12 @@
 const Validator = require("validatorjs");
 const { uuid } = require("../../helpers");
 const { Op } = require("sequelize");
-const { province: Province, sequelize, city: City } = require("./location.model");
+const { state: State, sequelize, city: City } = require("./location.model");
 const { getCity } = require("./location.helpers");
 
-City.belongsTo(Province, {as: "province", foreignKey: "provinceId"})
+// City.belongsTo(State, {as: "state", foreignKey: "stateId"})
 
-exports.provinceList = async (req, res) => {
+exports.stateList = async (req, res) => {
   const query = req.query
   let { q, limit = 10, page = 1, order = "name", sort = "asc" } = query
   
@@ -57,19 +57,19 @@ exports.provinceList = async (req, res) => {
       }
 
       const offset = (page - 1) * limit
-      const provinceList = await Province.findAndCountAll({
+      const stateList = await State.findAndCountAll({
         attributes: ["id", "name", "createdAt", "updatedAt"],
         where,
         order: orderDetail,
         limit,
         offset
       })
-      const total = provinceList.count
-      const result = provinceList.rows
+      const total = stateList.count
+      const result = stateList.rows
       res.status(200).json({
         status: "success",
         code: 200,
-        message: "successfully fetch province",
+        message: "successfully fetch state",
         total,
         limit,
         page,
@@ -88,26 +88,26 @@ exports.provinceList = async (req, res) => {
   }
 }
 
-exports.provinceStore = async (req, res) => {
+exports.stateStore = async (req, res) => {
   const body = req.body
   const { name } = body
   
-  Validator.registerAsync("checkProvince", async function (name, attribute, req, passes) {
-    const province = await Province.findOne({
+  Validator.registerAsync("checkState", async function (name, attribute, req, passes) {
+    const state = await State.findOne({
       where: {
         name,
         status: 1
       }
     })
-    if (province) {
-      passes (false, "province exist")
+    if (state) {
+      passes (false, "state exist")
     } else {
       passes ()
     }
   })
 
   const rules = {
-    name: "required|checkProvince"
+    name: "required|checkState"
   }
 
   let errorMessage = {
@@ -135,17 +135,17 @@ exports.provinceStore = async (req, res) => {
     const t = await sequelize.transaction()
     try {
       const id = uuid()
-      const provinceName = name.trim()
+      const stateName = name.trim()
 
       const params = {
         id: id,
-        name: provinceName,
+        name: stateName,
         status: 1
       }
-      await Province.create(params, {transaction: t})
+      await State.create(params, {transaction: t})
 
       await t.commit ()
-      const result = await Province.findOne({
+      const result = await State.findOne({
         where: {
           id
         }
@@ -153,7 +153,7 @@ exports.provinceStore = async (req, res) => {
       res.status(200).json({
         status: "success",
         code: 200,
-        message: "successfully store province",
+        message: "successfully store state",
         result: [result]
       })
     } catch (err) {
@@ -169,26 +169,26 @@ exports.provinceStore = async (req, res) => {
   }
 }
 
-exports.provinceDelete = async (req, res) => {
+exports.stateDelete = async (req, res) => {
   const body = req.body
   const { id } = body
   
-  Validator.registerAsync("checkProvince", async function (id, attribute, req, passes) {
-    const province = await Province.findOne({
+  Validator.registerAsync("checkState", async function (id, attribute, req, passes) {
+    const state = await State.findOne({
       where: {
         id,
         status: 1
       }
     })
-    if (province) {
+    if (state) {
       passes ()
     } else {
-      passes (false, "province not exist")
+      passes (false, "state not exist")
     }
   })
 
   const rules = {
-    id: "required|checkProvince"
+    id: "required|checkState"
   }
 
   let errorMessage = {
@@ -218,7 +218,7 @@ exports.provinceDelete = async (req, res) => {
       const params = {
         status: 0
       }
-      await Province.update(params, {
+      await State.update(params, {
         where: {
           id
         },
@@ -229,7 +229,7 @@ exports.provinceDelete = async (req, res) => {
       res.status(200).json({
         status: "success",
         code: 200,
-        message: "successfully delete province",
+        message: "successfully delete state",
         result: [result]
       })
     } catch (err) {
@@ -255,7 +255,7 @@ exports.cityList = async (req, res) => {
   const rules = {
     limit: "integer|min:1|max:100",
     page: "integer|min:1",
-    order: "in:name,province,searchCount",
+    order: "in:name,state,searchCount",
     sort: "in:asc,desc"
   }
 
@@ -294,8 +294,8 @@ exports.cityList = async (req, res) => {
           [Op.substring]: q
         }
       }
-      if (order === "province") {
-        orderDetail = [["province", "name", sort], ["name", sort]]
+      if (order === "state") {
+        orderDetail = [["state", "name", sort], ["name", sort]]
       }
 
       const offset = (page - 1) * limit
@@ -306,8 +306,8 @@ exports.cityList = async (req, res) => {
         offset,
         include: [
           {
-            model: Province,
-            as: "province"
+            model: State,
+            as: "state"
           }
         ]
       })
@@ -337,15 +337,15 @@ exports.cityList = async (req, res) => {
 
 exports.cityStore = async (req, res) => {
   const body = req.body
-  const { provinceId, name, image } = body
+  const { stateId, name, image } = body
   
   Validator.registerAsync("checkCity", async function (name, attribute, req, passes) {
     const where = {
       name,
       status: 1
     }
-    if (provinceId) {
-      where.provinceId = provinceId
+    if (stateId) {
+      where.stateId = stateId
     }
     const city = await City.findOne({
       where
@@ -357,17 +357,17 @@ exports.cityStore = async (req, res) => {
     }
   })
 
-  Validator.registerAsync("checkProvince", async function (id, attribute, req, passes) {
-    const province = await Province.findOne({
+  Validator.registerAsync("checkState", async function (id, attribute, req, passes) {
+    const state = await State.findOne({
       where: {
         id,
         status: 1
       }
     })
-    if (province) {
+    if (state) {
       passes ()
     } else {
-      passes (false, "province not exist")
+      passes (false, "state not exist")
     }
   })
 
@@ -381,7 +381,7 @@ exports.cityStore = async (req, res) => {
   })
 
   const rules = {
-    provinceId: "required|checkProvince",
+    stateId: "required|checkState",
     name: "required|checkCity",
     image: "url|checkImage"
   }
@@ -415,7 +415,7 @@ exports.cityStore = async (req, res) => {
 
       const params = {
         id: id,
-        provinceId,
+        stateId,
         name: cityName,
         image,
         status: 1
@@ -430,8 +430,8 @@ exports.cityStore = async (req, res) => {
         },
         include: [
           {
-            model: Province,
-            as: "province"
+            model: State,
+            as: "state"
           }
         ]
       })
@@ -439,7 +439,7 @@ exports.cityStore = async (req, res) => {
       res.status(200).json({
         status: "success",
         code: 200,
-        message: "successfully store province",
+        message: "successfully store state",
         result
       })
     } catch (err) {

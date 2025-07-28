@@ -4,7 +4,7 @@ const getCity = (cities = []) => {
     const obj = {
       id: city.id,
       name: city.name,
-      province: city.province ? city.province.name : "-",
+      state: city.state ? city.state.name : "-",
       image: city.image ? city.image : null,
       createdAt: city.createdAt ? city.createdAt : null,
       updatedAt: city.updatedAt ? city.updatedAt : null

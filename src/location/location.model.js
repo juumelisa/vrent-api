@@ -7,8 +7,8 @@ const db = {}
 db.Sequelize = Sequelize
 db.sequelize = sequelize
 
-function province() {
-  const Table = sequelize.define("province", {
+function state() {
+  const Table = sequelize.define("state", {
     id: {
       type: Sequelize.BIGINT,
       primaryKey: true,
@@ -30,7 +30,7 @@ function province() {
       createAt: true,
       charset: 'utf8mb4',
       collate: 'utf8mb4_general_ci',
-      tableName: 'province',
+      tableName: 'state',
       underscored: false
   });
 
@@ -49,7 +49,7 @@ function city() {
       type: Sequelize.STRING,
       allowNull: true
     },
-    provinceId: {
+    stateId: {
       type: Sequelize.BIGINT,
       allowNull: false
     },
@@ -80,7 +80,7 @@ function city() {
   return Table;
 }
 
-db.province = province()
+db.state = state()
 db.city = city()
 
 module.exports = db
