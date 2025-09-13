@@ -9,7 +9,7 @@ var logger = require('morgan');
 
 var brandRouter = require('./src/brand/brand.route');
 // var vehicleRouter = require('./src/vehicles/vehicles.route');
-// var chatRouter = require('./routes/chat');
+var chatRouter = require('./src/chat/chat.route');
 
 var userRouter = require('./src/user/user.route');
 var uploadRouter = require('./src/upload/upload.route');
@@ -30,7 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/brand', brandRouter);
 // app.use('/vehicle', vehicleRouter);
-// app.use('/chat', chatRouter);
+app.use('/chat', chatRouter);
 app.use('/admin', adminRouter);
 app.use('/user', userRouter);
 app.use('/upload', uploadRouter);
@@ -48,6 +48,8 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
+  console.log("Error dari sini")
+  console.log(err)
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

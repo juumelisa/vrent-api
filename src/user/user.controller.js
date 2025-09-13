@@ -5,9 +5,10 @@ const { getUser } = require("./user.helpers");
 const { Op } = require("sequelize");
 
 exports.store = (req, res) => {
+  console.log("hello")
   const body = req.body
   const { name, email, password } = body
-  
+  console.log(body)
   Validator.registerAsync("check_email", async function (name, attribute, req, passes) {
     const user = await User.findOne({
       where: {
