@@ -2,6 +2,7 @@ const Validator = require("validatorjs");
 const Db = require("./chat.model");
 const { Op } = require("sequelize");
 const { searchVehicles } = require("./chat.helpers");
+const { default: redis } = require("../../config/redis.config");
 const Brand = Db.brand
 
 exports.list = async (req, res) => {
@@ -80,7 +81,7 @@ exports.list = async (req, res) => {
 
 exports.store = (req, res) => {
   const body = req.body
-  const { client_id, messages } = body
+  const { messages } = body
 
   const rules = {
     messages: 'required|array',
@@ -110,87 +111,63 @@ exports.store = (req, res) => {
   }
 
   async function passes() {
-    // const t = await Db.sequelize.transaction()
     try{
-      const vehicleList = [
-        {
-          id: 1,
-          name: "Honda Brio",
-          type: "car",
-          location: "Bandung"
-        },
-        {
-          id: 2,
-          name: "Yamaha Mio",
-          type: "motorcycle",
-          location: "Jakarta"
-        },
-        {
-          id: 3,
-          name: "Honda Civic",
-          type: "car",
-          location: "Jakarta"
-        },
-        {
-          id: 4,
-          name: "Honda Brio",
-          type: "car",
-          location: "Bali"
-        },
-        {
-          id: 5,
-          name: "Honda Beat",
-          type: "motorcycle",
-          location: "Bali"
-        },
-        {
-          id: 6,
-          name: "Kijang Innova",
-          type: "car",
-          location: "Jakarta"
-        }
-      ]
-      // const id = uuid()
-      // const params = {
-      //   id,
-      //   name
-      // }
-      // await Brand.create(params, {transaction: t})
-      // await t.commit()
+      let vehicleList
+      const cacheKey = "vehicle:list";
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        vehicleList = JSON.parse(cached)
+      } else {
+        vehicleList = Db.getVehicleList()
+        await redis.set(cacheKey, JSON.stringify(vehicleList))
+      }
 
-      // {
-      //   "model": "llama3",
-      //   "prompt": "Hello, how are you?","stream": false
-      // }
+      let faq
+      const cacheFaqKey = "faq:list";
+      const cachedFaq = await redis.get(cacheFaqKey);
+      if (cachedFaq) {
+        faq = JSON.parse(cachedFaq)
+      } else {
+        faq = Db.getFAQ()
+        await redis.set(cacheFaqKey, JSON.stringify(faq))
+      }
+
+      const dataset = [...vehicleList, ...faq]
 
       const contextMessage = messages.map(msg => {
-        if (msg.role == "user") {
+        if (msg.role == "user" || msg.role == "assistant") {
           return msg.content
         } else {
           return ""
         }
       }).join('. ')
-      const lastUserMsg = messages[messages.length - 1].content;
 
-      const results = await searchVehicles(vehicleList, contextMessage);
-      const context = results.map(vehicle => `${vehicle.name}: ${vehicle.location}`).join("\n");
-      // const contextDocs = vectorStore.search(qEmbedding, 3); // top 3 matches
-      // const contextText = contextDocs.map((d) => d.text).join("\n\n");
+      const results = await searchVehicles(dataset, contextMessage);
+
+      const context = results.map(vehicle => {
+        let text
+        if (vehicle.question && vehicle.answer) {
+          text = `FAQ: ${vehicle.question} ${vehicle.answer}`
+        } else {
+          const available = vehicle.availableDate.map(el => el).join(' or ')
+          text = `${vehicle.name}. ${vehicle.location}. price per day: IDR ${vehicle.price || '200000'}. any date around ${available} is available. link: http://localhost:3000/rent/${vehicle.id} `
+        }
+        return text;
+      }).join("\n");
+      
       const chats = [
         {
           role: "system",
-          content: `you are a helpful assistant for vehicle rental website. you only help user for vehicle rent related things with this data: ${context}. if user ask unrelated question, please refuse`
+          content: "you are a helpful assistant for vehicle rental website. " +
+          `You must ONLY help user for vehicle rent related things. You can use this data: ${context}. ` + 
+          "Rules: " +
+          "- Reply with at most 1-5 short sentences. " +
+          "- You must ONLY give link in format [LINK: ]. " +
+          "- If user ask unrelated question, please refuse."
         },
         ...messages
-        // {
-        //   role: "user",
-        //   content: `Context:\n${context}\n\nQuestion: ${lastUserMsg}`
-        // }
       ]
 
-      // const lastMessageIndex = chats.length - 1
-      // chats[lastMessageIndex].content = `Context:\n${context}\n\nQuestion: ${lastUserMsg}`
-      // const data = {}
       const ollamaRes = await fetch(process.env.ASSISTANT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

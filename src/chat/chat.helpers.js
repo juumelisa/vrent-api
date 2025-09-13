@@ -1,9 +1,9 @@
 async function embedText(text) {
   try {
-    const res = await fetch("http://localhost:11434/api/embeddings", {
+    const res = await fetch(process.env.API_EMBED, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "nomic-embed-text", prompt: text }),
+      body: JSON.stringify({ model: process.env.EMBED_MODEL, prompt: text }),
     });
     const data = await res.json();
     return data.embedding; // vector
@@ -19,14 +19,19 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (normA * normB);
 }
 
-async function indexVehicles (vehicles) {
-  for (let vehicle of vehicles) {
-    const text = `${vehicle.title}: ${vehicle.type} ${vehicle.location}`;
-    vehicle.embedding = await embedText(text);
+async function indexVehicles (dataset) {
+  for (let data of dataset) {
+    let text
+    if (data.question && data.answer) {
+      text = `${data.question} Answer: ${data.asnwer}`;
+    } else {
+      text = `${data.title}: ${data.type} ${data.location} ${data.price}`;
+    }
+    data.embedding = await embedText(text);
   }
 }
 
-async function searchVehicles(vehicles, query, k = 2) {
+async function searchVehicles(vehicles, query, k = 5) {
 
   await indexVehicles(vehicles);
   const queryEmb = await embedText(query);
