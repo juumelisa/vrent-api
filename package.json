@@ -23,7 +23,10 @@
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "mysql2": "^3.2.0",
-    "sequelize": "^6.31.0",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
+    "pgvector": "^0.2.1",
+    "sequelize": "^6.37.7",
     "uuid-int": "^3.1.0",
     "validatorjs": "^3.22.1"
   },

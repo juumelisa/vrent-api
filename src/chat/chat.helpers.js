@@ -1,3 +1,12 @@
+
+const Db = require("../vehicles/vehicles.model");
+const Db_brand = require("../brand/brand.model");
+const Db_location = require("../location/location.model");
+const Vehicle = Db.vehicle
+const Brand = Db_brand.brand
+const City = Db_location.city
+const State = Db_location.state
+
 async function embedText(text) {
   try {
     const res = await fetch(process.env.API_EMBED, {
@@ -21,18 +30,28 @@ function cosineSimilarity(vecA, vecB) {
 
 async function indexVehicles (dataset) {
   for (let data of dataset) {
-    let text
-    if (data.question && data.answer) {
-      text = `${data.question} Answer: ${data.asnwer}`;
-    } else {
-      text = `${data.title}: ${data.type} ${data.location} ${data.price}`;
+    if (!data.embedding) {
+      let text
+      if (data.question && data.answer) {
+        text = `${data.question} Answer: ${data.asnwer}`;
+      } else {
+        text = `${data.title}: ${data.type} ${data.location} ${data.price}`;
+      }
+      data.embedding = await embedText(text);
+      if (data.type) {
+        Vehicle.update({
+          embedding: `[${data.embedding.join(",")}]`
+        }, {
+          where: {
+            id: data.id
+          }
+        })
+      }
     }
-    data.embedding = await embedText(text);
   }
 }
 
 async function searchVehicles(vehicles, query, k = 5) {
-
   await indexVehicles(vehicles);
   const queryEmb = await embedText(query);
   const scored = vehicles.map(p => ({
@@ -66,11 +85,50 @@ async function searchVehicles(vehicles, query, k = 5) {
 
 // export const vectorStore = new VectorStore();
 
+const getVehicleList = async () => {
+  const rest = await Vehicle.findAll({
+    where: {
+      status: 1
+    },
+    limit: 100,
+    order: [['created_at', 'desc']],
+    include: [
+      {
+        model: Brand,
+        as: 'brand'
+      },
+      {
+        model: City,
+        as: 'city',
+        include: [
+          {
+            model: State,
+            as: 'state'
+          }
+        ]
+      }
+    ]
+  })
+  const result = []
+  Object.values(rest).forEach((vehicle, index) => {
+    const obj = {
+      id: vehicle.id,
+      name: `${vehicle.brand.name} ${vehicle.name}`,
+      type: vehicle.type == 1 ? "car" : "motorcycle",
+      location: `${vehicle.city.name}, ${vehicle.city.state.name}`,
+      price: vehicle.price,
+      embedding: JSON.parse(vehicle.embedding)
+    }
+    result[index] = obj
+  })
+  return result;
+}
 
 module.exports = {
   embedText,
   cosineSimilarity,
   indexVehicles,
-  searchVehicles
+  searchVehicles,
+  getVehicleList
   // vectorStore: new VectorStore()
 }

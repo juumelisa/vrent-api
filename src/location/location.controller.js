@@ -323,7 +323,6 @@ exports.cityList = async (req, res) => {
         result
       })
     } catch (err) {
-      console.log(err)
       const message = err.sql ? "internal server error" : err.message
       res.status(200).json({
         status: "error",

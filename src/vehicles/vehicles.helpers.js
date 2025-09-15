@@ -8,7 +8,7 @@ const getVehicle = (vehicleList = []) => {
     obj.seat = vehicle.seat
     obj.rentPrice = vehicle.rentPrice
     obj.city = vehicle.city ? vehicle.city.name : null
-    obj.province = vehicle.city && vehicle.city.province ? vehicle.city.province.name : null
+    obj.state = vehicle.city && vehicle.city.state ? vehicle.city.state.name : null
     obj.images = vehicle.images && vehicle.images.length ? vehicle.images.map(el => el.url) : []
 
     result.push(obj)
