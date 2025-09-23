@@ -1,6 +1,6 @@
 const Validator = require("validatorjs");
 const { searchVehicles, getVehicleList } = require("./chat.helpers");
-const { default: redis } = require("../../config/redis.config");
+// const { default: redis } = require("../../config/redis.config");
 const { getFAQ } = require("./chat.model");
 
 
@@ -41,13 +41,7 @@ exports.store = (req, res) => {
       const vehicleList = await getVehicleList()
       const dataset = [...vehicleList, ...faq]
 
-      const contextMessage = messages.map(msg => {
-        if (msg.role == "user" || msg.role == "assistant") {
-          return msg.content
-        } else {
-          return ""
-        }
-      }).join('. ')
+      const contextMessage = messages.filter(el => el.role == "user" || el.role == "assistant").map(msg => msg.content).join('. ')
 
       const results = await searchVehicles(dataset, contextMessage);
       const context = results.map(vehicle => {
@@ -56,7 +50,7 @@ exports.store = (req, res) => {
           text = `FAQ: ${vehicle.question} ${vehicle.answer}`
         } else {
           // const available = vehicle.availableDate.map(el => el).join(' or ')
-          text = `${vehicle.name}. ${vehicle.location}. price per day: IDR ${vehicle.price || '200000'}.`
+          text = `${vehicle.name}. ${vehicle.location}.${vehicle.type == 'car' ? vehicle.seat + ' seat.' : ''} price per day: IDR ${vehicle.price || '200000'}.`
         }
         return text;
       }).join("\n");
@@ -67,7 +61,9 @@ exports.store = (req, res) => {
           `You must ONLY help user for vehicle rent related things. You can use this data: ${context}. ` + 
           "Rules: " +
           "- Reply with at most 1-3 short sentences. " +
+          "- Reply in the same language used by user. " +
           "- DON'T show the price unless user ask. " +
+          "- DON'T make any assumption about what user want. " +
           "- If user ask unrelated question, please refuse."
         },
         ...messages

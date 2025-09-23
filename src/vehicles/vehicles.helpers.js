@@ -4,9 +4,9 @@ const getVehicle = (vehicleList = []) => {
     const obj = {}
     obj.id = vehicle.id
     obj.brand = vehicle.brand ? vehicle.brand.name : null
-    obj.model = vehicle.model
+    obj.name = vehicle.name
     obj.seat = vehicle.seat
-    obj.rentPrice = vehicle.rentPrice
+    obj.price = vehicle.price
     obj.city = vehicle.city ? vehicle.city.name : null
     obj.state = vehicle.city && vehicle.city.state ? vehicle.city.state.name : null
     obj.images = vehicle.images && vehicle.images.length ? vehicle.images.map(el => el.url) : []

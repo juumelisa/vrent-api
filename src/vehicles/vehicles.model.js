@@ -83,45 +83,45 @@ function vehicle() {
   return Table;
 }
 
-// function vehicleImage() {
-//   const Table = sequelize.define("vehicleImage", {
-//     id: {
-//       type: Sequelize.BIGINT,
-//       primaryKey: true,
-//       unique: true,
-//       allowNull: false
-//     },
-//     vehicleId: {
-//       type: Sequelize.BIGINT,
-//       allowNull: false
-//     },
-//     url: {
-//       type: Sequelize.STRING,
-//       allowNull: true
-//     },
-//     index: {
-//       type: Sequelize.INTEGER,
-//       allowNull: false,
-//       defaultValue: 1
-//     },
-//     status: {
-//       type: Sequelize.SMALLINT,
-//       allowNull: false,
-//       defaultValue: 1
-//     }
-//   },
-//   {
-//       underscored: true,
-//       createAt: true,
-//       charset: 'utf8mb4',
-//       collate: 'utf8mb4_general_ci',
-//       tableName: 'vehicleImage'
-//   });
+function vehicleImage() {
+  const Table = sequelize.define("vehicleImage", {
+    id: {
+      type: Sequelize.BIGINT,
+      primaryKey: true,
+      unique: true,
+      allowNull: false
+    },
+    vehicleId: {
+      type: Sequelize.BIGINT,
+      allowNull: false
+    },
+    url: {
+      type: Sequelize.STRING,
+      allowNull: true
+    },
+    index: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      defaultValue: 1
+    },
+    status: {
+      type: Sequelize.SMALLINT,
+      allowNull: false,
+      defaultValue: 1
+    }
+  },
+  {
+      underscored: true,
+      createAt: true,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_general_ci',
+      tableName: 'vehicleImage'
+  });
 
-//   return Table;
-// }
+  return Table;
+}
 
 db.vehicle = vehicle()
-// db.vehicleImage = vehicleImage()
+db.vehicleImage = vehicleImage()
 
 module.exports = db

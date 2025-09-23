@@ -12,10 +12,11 @@ const sequelize = Db.sequelize
 
 Vehicle.belongsTo(Brand, {as: "brand", foreignKey: "brandId"})
 Vehicle.belongsTo(City, {as: "city", foreignKey: "locationId"})
+Vehicle.hasMany(Db.vehicleImage, {as: "images", foreignKey: "vehicleId"})
 
 exports.lists = async (req, res) => {
   const query = req.query
-  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc', type } = query
+  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc', type, city } = query
 
   const rules = {
     q: 'string',
@@ -68,6 +69,11 @@ exports.lists = async (req, res) => {
         const keyType = getKeyByValue(vehicleType(), type)
         where.type = keyType
       }
+      const where_city = {}
+      if (city) {
+        where_city.name = city
+      }
+
       const vehicles = await Vehicle.findAndCountAll({
         where,
         distinct: true,
@@ -76,12 +82,17 @@ exports.lists = async (req, res) => {
         order: orderList,
         include: [
           {
+            model: Db.vehicleImage,
+            as: 'images'
+          },
+          {
             model: Brand,
             as: 'brand'
           },
           {
             model: City,
             as: 'city',
+            where: where_city,
             include: [
               {
                 model: State,
@@ -201,7 +212,7 @@ exports.lists = async (req, res) => {
 
 exports.store = async (req, res) => {
   const body = req.body
-  const { brandId, name, seat, price, type, locationId } = body
+  const { brandId, name, seat, price, type, locationId, images } = body
   
   Validator.registerAsync("check_brand", async function (id, attribute, req, passes) {
     const brand = await Brand.findOne({
@@ -223,7 +234,9 @@ exports.store = async (req, res) => {
     seat: "required|integer|min:1",
     price: "required|numeric",
     type: "required|in:car,motorcycle",
-    locationId: "required"
+    locationId: "required",
+    images: "array",
+    "images.*": "url"
   }
 
   let errorMessage = {
@@ -264,7 +277,19 @@ exports.store = async (req, res) => {
         locationId        
       }
       await Vehicle.create(params, {transaction: t})
-
+      if (images) {
+        const param_images = []
+        Object.values(images).forEach((image, index) => {
+          const obj_image = {
+            id: uuid(index),
+            vehicleId: id,
+            url: image,
+            index
+          }
+          param_images.push(obj_image)
+        })
+        await Db.vehicleImage.bulkCreate(param_images, {transaction: t})
+      }
       await t.commit ()
       res.status(200).json({
         status: "success",

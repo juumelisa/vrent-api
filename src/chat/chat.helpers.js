@@ -35,7 +35,7 @@ async function indexVehicles (dataset) {
       if (data.question && data.answer) {
         text = `${data.question} Answer: ${data.asnwer}`;
       } else {
-        text = `${data.title}: ${data.type} ${data.location} ${data.price}`;
+        text = `${data.title}: ${data.type}. ${data.seat} seat. ${data.location} ${data.price}`;
       }
       data.embedding = await embedText(text);
       if (data.type) {
@@ -51,7 +51,7 @@ async function indexVehicles (dataset) {
   }
 }
 
-async function searchVehicles(vehicles, query, k = 5) {
+async function searchVehicles(vehicles, query, k = 10) {
   await indexVehicles(vehicles);
   const queryEmb = await embedText(query);
   const scored = vehicles.map(p => ({
@@ -117,6 +117,7 @@ const getVehicleList = async () => {
       type: vehicle.type == 1 ? "car" : "motorcycle",
       location: `${vehicle.city.name}, ${vehicle.city.state.name}`,
       price: vehicle.price,
+      seat: vehicle.seat,
       embedding: JSON.parse(vehicle.embedding)
     }
     result[index] = obj
