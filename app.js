@@ -59,14 +59,14 @@ app.use(function(err, req, res, next) {
     return res.status(200).json({
       code: 413,
       status: 'error',
-      message: 'File too large. Max size is 2MB.',
+      message: ['File too large. Max size is 2MB.'],
       result: []
     });
   } else {
     return res.status(200).json({
       code: 500,
       status: 'error',
-      message: err.message,
+      message: [err.message],
       result: []
     });
   }

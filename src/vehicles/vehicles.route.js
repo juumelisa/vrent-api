@@ -7,6 +7,5 @@ const { upload } = require('../../middleware/upload');
 
 router.get('/', auth, controller.lists);
 router.post('/', [auth, upload.none()], controller.store);
-// router.get('/:id', auth, controller.info);
 
 module.exports = router;

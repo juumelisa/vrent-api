@@ -111,7 +111,6 @@ exports.store = (req, res) => {
       //   result: []
       // })
     } catch (err) {
-      // console.log(err)
       // await t.commit()
       const message = err.sql ? "query syntax error" : err.message
       res.status(200).json({

@@ -148,7 +148,6 @@ exports.lists = async (req, res) => {
       })
       const total = vehicles.count
       const vehicleList = vehicles.rows
-      // console.log(vehicleList[0].unit)
       const result = getVehicle(vehicleList)
       res.status(200).json({
         status: "success",
@@ -160,7 +159,6 @@ exports.lists = async (req, res) => {
         result
       })
     } catch (err) {
-      console.log(err)
       res.status(200).json({
         status: "error",
         code: 400,

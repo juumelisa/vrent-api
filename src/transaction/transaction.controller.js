@@ -75,7 +75,6 @@ exports.lists = async (req, res) => {
         result: transactionList
       })
     } catch (err) {
-      console.log(err)
       res.status(200).json({
         status: "error",
         code: 400,

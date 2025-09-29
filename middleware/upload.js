@@ -13,7 +13,9 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'VRent', // optional folder name in Cloudinary
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    public_id: (req, file) => `${Date.now()}`,
+    public_id: (req, file) => {
+      return `${Date.now()}`
+    },
   },
 });
 
