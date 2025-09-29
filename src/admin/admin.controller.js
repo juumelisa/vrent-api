@@ -154,7 +154,11 @@ exports.login = async (req, res) => {
           await TokenAdmin.create(params, {transaction: t})
           await t.commit ()
           const result = [{
-            token
+            token,
+            admin: {
+              name: admin.name,
+              email: admin.email
+            }
           }]
           res.status(200).json({
             status: "success",

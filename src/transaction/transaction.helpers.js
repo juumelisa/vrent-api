@@ -1,6 +1,7 @@
 const getVehicle = (vehicleList = []) => {
   const result = []
   Object.values(vehicleList).forEach(vehicle => {
+    console.log(vehicle.unit.length)
     const obj = {}
     obj.id = vehicle.id
     obj.brand = vehicle.brand ? vehicle.brand.name : null

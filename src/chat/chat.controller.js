@@ -1,6 +1,6 @@
 const Validator = require("validatorjs");
 const { searchVehicles, getVehicleList } = require("./chat.helpers");
-// const { default: redis } = require("../../config/redis.config");
+const { default: redis } = require("../../config/redis.config");
 const { getFAQ } = require("./chat.model");
 
 
@@ -37,20 +37,29 @@ exports.store = (req, res) => {
 
   async function passes() {
     try{
+      let vehicleList = []
+      const vehicleKey = "vehiclelist";
+      let vehicles = await redis.get(vehicleKey)
       let faq = getFAQ()
-      const vehicleList = await getVehicleList()
+      if (vehicles) {
+        vehicleList = JSON.parse(vehicles)
+      } else {
+        vehicleList = await getVehicleList()
+        await redis.set(vehicleKey, JSON.stringify(vehicleList))
+      }
       const dataset = [...vehicleList, ...faq]
 
-      const contextMessage = messages.filter(el => el.role == "user" || el.role == "assistant").map(msg => msg.content).join('. ')
+      const lastMessages = messages.slice(-10)
+      const contextMessage = lastMessages.map(msg => msg.content).join('. ')
 
       const results = await searchVehicles(dataset, contextMessage);
-      const context = results.map(vehicle => {
+      context = results.map(vehicle => {
         let text
         if (vehicle.question && vehicle.answer) {
           text = `FAQ: ${vehicle.question} ${vehicle.answer}`
         } else {
           // const available = vehicle.availableDate.map(el => el).join(' or ')
-          text = `${vehicle.name}. ${vehicle.location}.${vehicle.type == 'car' ? vehicle.seat + ' seat.' : ''} price per day: IDR ${vehicle.price || '200000'}.`
+          text = `${vehicle.name}. ${vehicle.type}. ${vehicle.location}.${vehicle.type == 'car' ? vehicle.seat + ' seat.' : ''} price per day: IDR ${vehicle.price || '200000'}.`
         }
         return text;
       }).join("\n");

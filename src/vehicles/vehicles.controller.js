@@ -4,6 +4,8 @@ const Db_brand = require("../brand/brand.model");
 const Db_location = require("../location/location.model");
 const { uuid } = require("../../helpers");
 const { getVehicle } = require("./vehicles.helpers");
+const { transaction } = require("../transaction/transaction.model");
+const { Op } = require("sequelize");
 const Vehicle = Db.vehicle
 const Brand = Db_brand.brand
 const City = Db_location.city
@@ -13,10 +15,12 @@ const sequelize = Db.sequelize
 Vehicle.belongsTo(Brand, {as: "brand", foreignKey: "brandId"})
 Vehicle.belongsTo(City, {as: "city", foreignKey: "locationId"})
 Vehicle.hasMany(Db.vehicleImage, {as: "images", foreignKey: "vehicleId"})
+Vehicle.hasMany(Db.vehicleUnit, {as: "unit", foreignKey: "vehicleId"})
+Db.vehicleUnit.hasMany(transaction, {as: "transaction", foreignKey: "unitId"})
 
 exports.lists = async (req, res) => {
   const query = req.query
-  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc', type, city } = query
+  let { q, limit = 10, offset = 0, order = 'name', sort = 'asc', type, city, startRent, endRent } = query
 
   const rules = {
     q: 'string',
@@ -24,7 +28,9 @@ exports.lists = async (req, res) => {
     offset: 'integer|min:0',
     order: 'in:name,createdAt,updatedAt',
     sort: 'in:asc,desc',
-    type: 'in:car,motorbike,minivan'
+    type: 'in:car,motorbike,minivan',
+    startRent: 'date',
+    endRent: 'date'
   }
 
   let error_msg = {
@@ -71,9 +77,35 @@ exports.lists = async (req, res) => {
       }
       const where_city = {}
       if (city) {
-        where_city.name = city
+        where_city.name = {
+          [Op.like]: city
+        }
       }
 
+      if (startRent && endRent) {
+        const onRent = await transaction.findAll({
+          where: {
+            [Op.or]: [
+              {
+                [Op.and]: {
+                  rentStart: {[Op.gte]: startRent},
+                  rentStart: {[Op.lte]: endRent}
+                }
+              },
+              {
+                [Op.and]: {
+                  rentStart: {[Op.lte]: startRent},
+                  rentEnd: {[Op.lt]: startRent}
+                }
+              }
+            ]
+          }
+        })
+        const onRentId = onRent.map(el => el.vehicleId)
+        where.id = {
+          [Op.notIn]: onRentId
+        }
+      }
       const vehicles = await Vehicle.findAndCountAll({
         where,
         distinct: true,
@@ -81,6 +113,18 @@ exports.lists = async (req, res) => {
         offset,
         order: orderList,
         include: [
+          {
+            model: Db.vehicleUnit,
+            as: 'unit',
+            required: true,
+            include: [
+              {
+                model: transaction,
+                as: "transaction",
+                required: false
+              }
+            ]
+          },
           {
             model: Db.vehicleImage,
             as: 'images'
@@ -104,6 +148,7 @@ exports.lists = async (req, res) => {
       })
       const total = vehicles.count
       const vehicleList = vehicles.rows
+      // console.log(vehicleList[0].unit)
       const result = getVehicle(vehicleList)
       res.status(200).json({
         status: "success",
@@ -212,7 +257,7 @@ exports.lists = async (req, res) => {
 
 exports.store = async (req, res) => {
   const body = req.body
-  const { brandId, name, seat, price, type, locationId, images } = body
+  const { brandId, name, seat, price, type, locationId, images, unit } = body
   
   Validator.registerAsync("check_brand", async function (id, attribute, req, passes) {
     const brand = await Brand.findOne({
@@ -236,7 +281,9 @@ exports.store = async (req, res) => {
     type: "required|in:car,motorcycle",
     locationId: "required",
     images: "array",
-    "images.*": "url"
+    "images.*": "required|url",
+    unit: "required|array",
+    "unit.*": "required|string"
   }
 
   let errorMessage = {
@@ -277,6 +324,17 @@ exports.store = async (req, res) => {
         locationId        
       }
       await Vehicle.create(params, {transaction: t})
+
+      const params_unit = []
+      Object.values(unit).forEach((unit_detail, index) => {
+        const obj_unit = {}
+        obj_unit.id = uuid(index)
+        obj_unit.vehicleId = id
+        obj_unit.unitNo = unit_detail
+
+        params_unit.push(obj_unit)
+      })
+      await Db.vehicleUnit.bulkCreate(params_unit, {transaction: t})
       if (images) {
         const param_images = []
         Object.values(images).forEach((image, index) => {

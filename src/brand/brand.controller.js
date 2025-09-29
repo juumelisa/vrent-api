@@ -47,7 +47,7 @@ exports.list = async (req, res) => {
       const where = {}
       if (q) {
         where.name = {
-          [Op.substring]: q
+          [Op.iLike]: `%${q}%`
         }
       }
       const brands = await Brand.findAndCountAll({

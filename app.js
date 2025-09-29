@@ -9,6 +9,7 @@ var logger = require('morgan');
 
 var brandRouter = require('./src/brand/brand.route');
 var vehicleRouter = require('./src/vehicles/vehicles.route');
+var transactionRouter = require('./src/transaction/transaction.route');
 var chatRouter = require('./src/chat/chat.route');
 
 var userRouter = require('./src/user/user.route');
@@ -30,6 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/brand', brandRouter);
 app.use('/vehicle', vehicleRouter);
+app.use('/transaction', transactionRouter);
 app.use('/chat', chatRouter);
 app.use('/admin', adminRouter);
 app.use('/user', userRouter);

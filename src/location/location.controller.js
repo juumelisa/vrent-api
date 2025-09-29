@@ -289,9 +289,10 @@ exports.cityList = async (req, res) => {
       const where = {
         status: 1
       }
+      console.log(q)
       if (q) {
         where.name = {
-          [Op.substring]: q
+          [Op.iLike]: `%${q}%`
         }
       }
       if (order === "state") {
