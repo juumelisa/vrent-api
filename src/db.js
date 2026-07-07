@@ -10,6 +10,8 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'vrent',
   waitForConnections: true,
   connectionLimit: 10,
+  // Keep DATE columns as plain 'YYYY-MM-DD' strings instead of JS Date objects.
+  dateStrings: ['DATE'],
   // BIGINT columns come back as JS numbers by default, which lose precision
   // above 2^53. Cast LONGLONG fields to native BigInt so ids stay exact.
   typeCast: (field, next) => {

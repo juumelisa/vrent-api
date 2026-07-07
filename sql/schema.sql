@@ -53,3 +53,27 @@ CREATE TABLE IF NOT EXISTS sessions (
   UNIQUE KEY uniq_token (token),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS reservations (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  -- vehicle_id/vehicle_unit_id are only used internally (e.g. to free the unit on cancel).
+  -- All display fields below are a snapshot taken at booking time, so editing or removing
+  -- the vehicle/model/unit later never changes what a past reservation shows.
+  vehicle_id BIGINT UNSIGNED NOT NULL,
+  vehicle_unit_id BIGINT UNSIGNED NOT NULL,
+  vehicle_type VARCHAR(50) NOT NULL,
+  vehicle_brand VARCHAR(100) NOT NULL,
+  vehicle_model VARCHAR(100) NOT NULL,
+  vehicle_image_url VARCHAR(500) NOT NULL,
+  police_number VARCHAR(20) NOT NULL,
+  price_per_day INT NOT NULL COMMENT 'Rupiah per day, at time of booking',
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  total_price INT NOT NULL COMMENT 'Rupiah, total for the whole rental period',
+  status ENUM('confirmed', 'cancelled') NOT NULL DEFAULT 'confirmed',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
+  FOREIGN KEY (vehicle_unit_id) REFERENCES vehicle_units(id)
+);
