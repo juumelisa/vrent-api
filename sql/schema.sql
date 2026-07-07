@@ -1,0 +1,55 @@
+CREATE TABLE IF NOT EXISTS locations (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  city VARCHAR(255) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  open_hours VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_models (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  type VARCHAR(50) NOT NULL,
+  brand VARCHAR(100) NOT NULL,
+  model VARCHAR(100) NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  UNIQUE KEY uniq_type_brand_model (type, brand, model)
+);
+
+CREATE TABLE IF NOT EXISTS vehicles (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  vehicle_model_id BIGINT UNSIGNED NOT NULL,
+  location_id BIGINT UNSIGNED NOT NULL,
+  price_per_day INT NOT NULL COMMENT 'Rupiah per day',
+  seats INT NOT NULL,
+  transmission SMALLINT UNSIGNED NOT NULL COMMENT '1 = Manual, 2 = Automatic',
+  FOREIGN KEY (vehicle_model_id) REFERENCES vehicle_models(id),
+  FOREIGN KEY (location_id) REFERENCES locations(id)
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_units (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  vehicle_id BIGINT UNSIGNED NOT NULL,
+  police_number VARCHAR(20) NOT NULL,
+  available BOOLEAN NOT NULL DEFAULT TRUE,
+  UNIQUE KEY uniq_police_number (police_number),
+  FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_email (email)
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  token VARCHAR(500) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_token (token),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
