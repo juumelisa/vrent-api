@@ -163,6 +163,54 @@ const vehiclesByCity = {
   ],
 };
 
+const faqs = [
+  {
+    question: 'How do I book a vehicle?',
+    answer:
+      "Browse available vehicles, pick the one you want, choose your rental dates, and confirm your reservation. You'll get a confirmation once it's booked.",
+  },
+  {
+    question: 'What documents do I need to rent a vehicle?',
+    answer:
+      "You'll need a valid driver's license and a government-issued ID. Some vehicle types may require a minimum age or additional identification at pickup.",
+  },
+  {
+    question: 'Can I cancel or change my reservation?',
+    answer:
+      'Yes. You can cancel a reservation from the My reservations page. Changes to dates or vehicles require cancelling and creating a new booking.',
+  },
+  {
+    question: 'Is fuel included in the rental price?',
+    answer:
+      "No, fuel isn't included. Vehicles are provided with a full tank and should be returned with a full tank to avoid a refueling fee.",
+  },
+  {
+    question: 'What happens if I return the vehicle late?',
+    answer:
+      'Late returns are charged an additional day at the standard daily rate. If you need more time, contact us before your return date to extend your reservation.',
+  },
+  {
+    question: 'Is there a maximum rental period?',
+    answer:
+      'Rentals can be booked for up to 30 days. If you need a vehicle for longer than that, please contact us to arrange an extended rental.',
+  },
+  {
+    question: 'Is insurance included?',
+    answer:
+      "All rentals include basic insurance coverage. You're responsible for any damage beyond normal wear and tear, subject to the coverage terms shown at checkout.",
+  },
+  {
+    question: 'Which cities do you operate in?',
+    answer:
+      'We operate in multiple cities across Indonesia. You can see vehicles available in your city from the homepage or by filtering the vehicle list by city.',
+  },
+  {
+    question: 'How do I pay for my rental?',
+    answer:
+      'Pricing is shown up front with no hidden fees. Payment is collected when your reservation is confirmed.',
+  },
+];
+
 async function seed() {
   await pool.query('SET FOREIGN_KEY_CHECKS = 0');
   await pool.query('DROP TABLE IF EXISTS reservations');
@@ -171,6 +219,7 @@ async function seed() {
   await pool.query('DROP TABLE IF EXISTS vehicle_models');
   await pool.query('DROP TABLE IF EXISTS locations');
   await pool.query('DROP TABLE IF EXISTS cities');
+  await pool.query('DROP TABLE IF EXISTS faqs');
   await pool.query('SET FOREIGN_KEY_CHECKS = 1');
 
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
@@ -243,7 +292,14 @@ async function seed() {
     }
   }
 
-  console.log(`Seeded ${locations.length} locations, ${modelIds.size} vehicle models, and ${unitCount} vehicle units.`);
+  for (let i = 0; i < faqs.length; i++) {
+    await pool.query(
+      'INSERT INTO faqs (question, answer, sort_order) VALUES (?, ?, ?)',
+      [faqs[i].question, faqs[i].answer, i]
+    );
+  }
+
+  console.log(`Seeded ${locations.length} locations, ${modelIds.size} vehicle models, ${unitCount} vehicle units, and ${faqs.length} FAQs.`);
   await pool.end();
 }
 
