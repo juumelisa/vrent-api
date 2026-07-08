@@ -184,7 +184,9 @@ app.get('/auth/me', authenticate, async (req, res, next) => {
 app.get('/locations', async (req, res, next) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, city, address, open_hours AS openHours FROM locations'
+      `SELECT l.id, l.name, c.name AS city, l.address, l.open_hours AS openHours, c.image_url AS imageUrl
+       FROM locations l
+       JOIN cities c ON c.id = l.city_id`
     );
     res.json(rows);
   } catch (err) {
@@ -200,7 +202,10 @@ app.get('/locations/:id', async (req, res, next) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, city, address, open_hours AS openHours FROM locations WHERE id = ?',
+      `SELECT l.id, l.name, c.name AS city, l.address, l.open_hours AS openHours, c.image_url AS imageUrl
+       FROM locations l
+       JOIN cities c ON c.id = l.city_id
+       WHERE l.id = ?`,
       [id]
     );
 

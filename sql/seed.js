@@ -5,6 +5,24 @@ const pool = require('../src/db');
 const { TRANSMISSION_CODES } = require('../src/transmission');
 const { placeholderImage } = require('../src/vehicleImage');
 
+// Real photo per city isn't available in this environment, so seed a placeholder
+// image (same approach as vehicle models in vehicleImage.js).
+const cityImage = (city) =>
+  `https://placehold.co/800x600/png?text=${encodeURIComponent(city)}`;
+
+const cities = [
+  { name: 'Jakarta', imageUrl: cityImage('Jakarta') },
+  { name: 'Surabaya', imageUrl: cityImage('Surabaya') },
+  { name: 'Denpasar', imageUrl: cityImage('Denpasar') },
+  { name: 'Bandung', imageUrl: cityImage('Bandung') },
+  { name: 'Medan', imageUrl: cityImage('Medan') },
+  { name: 'Yogyakarta', imageUrl: cityImage('Yogyakarta') },
+  { name: 'Makassar', imageUrl: cityImage('Makassar') },
+  { name: 'Semarang', imageUrl: cityImage('Semarang') },
+];
+
+// `city` here is a lookup key into `cities` (resolved to city_id at seed time),
+// not a column on the locations table itself.
 const locations = [
   { name: 'Hub Jakarta Pusat', city: 'Jakarta', address: 'Jl. Jenderal Sudirman No. 1', openHours: '08:00 - 20:00' },
   { name: 'Terminal Bandara Juanda', city: 'Surabaya', address: 'Jl. Bandara Juanda No. 2', openHours: '24/7' },
@@ -152,6 +170,7 @@ async function seed() {
   await pool.query('DROP TABLE IF EXISTS vehicles');
   await pool.query('DROP TABLE IF EXISTS vehicle_models');
   await pool.query('DROP TABLE IF EXISTS locations');
+  await pool.query('DROP TABLE IF EXISTS cities');
   await pool.query('SET FOREIGN_KEY_CHECKS = 1');
 
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
@@ -159,6 +178,15 @@ async function seed() {
 
   for (const statement of statements) {
     await pool.query(statement);
+  }
+
+  const cityIds = new Map();
+  for (const city of cities) {
+    const [result] = await pool.query(
+      'INSERT INTO cities (name, image_url) VALUES (?, ?)',
+      [city.name, city.imageUrl]
+    );
+    cityIds.set(city.name, result.insertId);
   }
 
   const modelIds = new Map();
@@ -180,8 +208,8 @@ async function seed() {
 
   for (const location of locations) {
     const [locationResult] = await pool.query(
-      'INSERT INTO locations (name, city, address, open_hours) VALUES (?, ?, ?, ?)',
-      [location.name, location.city, location.address, location.openHours]
+      'INSERT INTO locations (city_id, name, address, open_hours) VALUES (?, ?, ?, ?)',
+      [cityIds.get(location.city), location.name, location.address, location.openHours]
     );
 
     const regionCode = REGION_CODE_BY_CITY[location.city];
