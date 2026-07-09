@@ -86,9 +86,24 @@ CREATE TABLE IF NOT EXISTS reservations (
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   total_price INT NOT NULL COMMENT 'Rupiah, total for the whole rental period',
-  status ENUM('confirmed', 'cancelled') NOT NULL DEFAULT 'confirmed',
+  status ENUM('pending_payment', 'confirmed', 'cancelled') NOT NULL DEFAULT 'pending_payment',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
   FOREIGN KEY (vehicle_unit_id) REFERENCES vehicle_units(id)
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  reservation_id BIGINT UNSIGNED NOT NULL,
+  order_id VARCHAR(100) NOT NULL COMMENT 'Midtrans order_id, sent as transaction_details.order_id',
+  amount INT NOT NULL COMMENT 'Rupiah, matches reservations.total_price at creation time',
+  status ENUM('pending', 'paid', 'failed', 'expired') NOT NULL DEFAULT 'pending',
+  snap_token VARCHAR(255) NOT NULL,
+  payment_type VARCHAR(50),
+  transaction_id VARCHAR(100) COMMENT 'Midtrans transaction_id, set once Midtrans reports a status',
+  paid_at TIMESTAMP NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_order_id (order_id),
+  FOREIGN KEY (reservation_id) REFERENCES reservations(id)
 );

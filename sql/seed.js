@@ -213,6 +213,7 @@ const faqs = [
 
 async function seed() {
   await pool.query('SET FOREIGN_KEY_CHECKS = 0');
+  await pool.query('DROP TABLE IF EXISTS payments');
   await pool.query('DROP TABLE IF EXISTS reservations');
   await pool.query('DROP TABLE IF EXISTS vehicle_units');
   await pool.query('DROP TABLE IF EXISTS vehicles');

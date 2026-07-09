@@ -8,6 +8,7 @@ const faqRoutes = require('./src/routes/faqs');
 const vehicleRoutes = require('./src/routes/vehicles');
 const reservationRoutes = require('./src/routes/reservations');
 const statsRoutes = require('./src/routes/stats');
+const paymentRoutes = require('./src/routes/payments');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,7 @@ app.use('/faqs', faqRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use('/reservations', reservationRoutes);
 app.use('/stats', statsRoutes);
+app.use('/payments', paymentRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -1,9 +1,12 @@
 const express = require('express');
+const crypto = require('crypto');
 
 const pool = require('../db');
 const authenticate = require('../middleware/authenticate');
 const { toBigInt } = require('../utils/bigint');
 const { toDateOnly, MS_PER_DAY } = require('../utils/date');
+const { snap } = require('../midtrans');
+const { applyTransactionStatus } = require('../paymentStatus');
 
 const router = express.Router();
 
@@ -157,6 +160,107 @@ router.get('/:id', authenticate, async (req, res, next) => {
   }
 });
 
+router.post('/:id/pay', authenticate, async (req, res, next) => {
+  const id = toBigInt(req.params.id);
+  if (id === null) {
+    return res.status(404).json({ message: 'Reservation not found' });
+  }
+
+  try {
+    const [rows] = await pool.query(`${RESERVATION_SELECT} WHERE id = ? AND user_id = ?`, [id, req.userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+    const reservation = mapReservation(rows[0]);
+    if (reservation.status !== 'pending_payment') {
+      return res.status(409).json({ message: `Reservation is already ${reservation.status}` });
+    }
+
+    // Reuse an in-flight Midtrans transaction instead of minting a new order_id
+    // every time the pay page is (re)loaded.
+    const [existing] = await pool.query(
+      "SELECT order_id AS orderId, snap_token AS snapToken FROM payments WHERE reservation_id = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1",
+      [id]
+    );
+    if (existing.length > 0) {
+      return res.json(existing[0]);
+    }
+
+    const [userRows] = await pool.query('SELECT name, email FROM users WHERE id = ?', [req.userId]);
+    const user = userRows[0];
+    const orderId = `RSV-${id}-${crypto.randomBytes(4).toString('hex')}`;
+
+    const transaction = await snap.createTransaction({
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: reservation.totalPrice,
+      },
+      item_details: [
+        {
+          id: String(reservation.vehicleId),
+          name: `${reservation.brand} ${reservation.model} (${reservation.startDate} to ${reservation.endDate})`.slice(0, 50),
+          price: reservation.totalPrice,
+          quantity: 1,
+        },
+      ],
+      customer_details: {
+        first_name: user?.name ?? 'Customer',
+        email: user?.email,
+      },
+    });
+
+    await pool.query(
+      "INSERT INTO payments (reservation_id, order_id, amount, status, snap_token) VALUES (?, ?, ?, 'pending', ?)",
+      [id, orderId, reservation.totalPrice, transaction.token]
+    );
+
+    res.json({ orderId, snapToken: transaction.token });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Actively pulls the transaction status from Midtrans instead of waiting for
+// the /payments/notification webhook — needed in local dev, where Midtrans's
+// servers have no way to reach this machine to deliver that webhook.
+router.post('/:id/sync-payment', authenticate, async (req, res, next) => {
+  const id = toBigInt(req.params.id);
+  if (id === null) {
+    return res.status(404).json({ message: 'Reservation not found' });
+  }
+
+  try {
+    const [reservationRows] = await pool.query(`${RESERVATION_SELECT} WHERE id = ? AND user_id = ?`, [
+      id,
+      req.userId,
+    ]);
+    if (reservationRows.length === 0) {
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+
+    if (reservationRows[0].status === 'pending_payment') {
+      const [paymentRows] = await pool.query(
+        'SELECT order_id AS orderId FROM payments WHERE reservation_id = ? ORDER BY created_at DESC LIMIT 1',
+        [id]
+      );
+      if (paymentRows.length > 0) {
+        try {
+          const statusResponse = await snap.transaction.status(paymentRows[0].orderId);
+          await applyTransactionStatus(statusResponse);
+        } catch {
+          // Midtrans returns 404 until the customer has actually interacted with
+          // the Snap page — that just means there's nothing new to sync yet.
+        }
+      }
+    }
+
+    const [rows] = await pool.query(`${RESERVATION_SELECT} WHERE id = ? AND user_id = ?`, [id, req.userId]);
+    res.json(mapReservation(rows[0]));
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/:id/cancel', authenticate, async (req, res, next) => {
   const id = toBigInt(req.params.id);
   if (id === null) {
@@ -175,7 +279,7 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
       await connection.rollback();
       return res.status(404).json({ message: 'Reservation not found' });
     }
-    if (rows[0].status !== 'confirmed') {
+    if (!['pending_payment', 'confirmed'].includes(rows[0].status)) {
       await connection.rollback();
       return res.status(409).json({ message: 'Reservation is already cancelled' });
     }
